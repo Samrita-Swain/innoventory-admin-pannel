@@ -806,16 +806,59 @@ const VendorEdit = () => {
         {/* File Upload Section */}
         <div className="card">
           <h2 className="text-xl font-semibold text-gray-900 mb-6">Documents & Files</h2>
-          <FileUpload
-            onFilesChange={handleFilesChange}
-            existingFiles={uploadedFiles}
-            maxFileSize={5}
-            multiple={true}
-            label="Upload Vendor Documents"
-          />
-          <p className="text-sm text-gray-500 mt-2">
-            Upload vendor agreements, business licenses, insurance documents, product catalogs, etc.
-          </p>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* GST File Upload */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                GST File Upload
+              </label>
+              <FileUpload
+                onFilesChange={(files) => handleFileUpload('gstFile', files[0])}
+                existingFiles={uploadedFiles.gstFile ? [uploadedFiles.gstFile] : []}
+                maxFileSize={5}
+                multiple={false}
+                label="Upload GST Document"
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Upload GST registration certificate
+              </p>
+            </div>
+
+            {/* NDA File Upload */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                NDA File Upload *
+              </label>
+              <FileUpload
+                onFilesChange={(files) => handleFileUpload('ndaFile', files[0])}
+                existingFiles={uploadedFiles.ndaFile ? [uploadedFiles.ndaFile] : []}
+                maxFileSize={5}
+                multiple={false}
+                label="Upload NDA Document"
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Upload signed NDA document (Required)
+              </p>
+            </div>
+
+            {/* Agreement File Upload */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Agreement File Upload
+              </label>
+              <FileUpload
+                onFilesChange={(files) => handleFileUpload('agreementFile', files[0])}
+                existingFiles={uploadedFiles.agreementFile ? [uploadedFiles.agreementFile] : []}
+                maxFileSize={5}
+                multiple={false}
+                label="Upload Agreement Document"
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Upload vendor agreement document
+              </p>
+            </div>
+          </div>
         </div>
 
         {/* Form Actions */}

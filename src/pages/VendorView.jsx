@@ -58,6 +58,7 @@ const VendorView = () => {
           allEmails: foundVendor.emails || [],
           allPhones: foundVendor.phones || [],
           companyLogos: foundVendor.files?.companyLogos || [],
+          files: foundVendor.files || {},
           // Default values for missing fields
           services: foundVendor.services || ['General Services'],
           performanceMetrics: foundVendor.performanceMetrics || {
@@ -93,8 +94,12 @@ const VendorView = () => {
             { id: 'ORD-018', date: '2024-06-18', amount: '₹1,20,000', status: 'Processing', client: 'Global Tech Inc' },
             { id: 'ORD-015', date: '2024-06-15', amount: '₹89,000', status: 'Completed', client: 'StartUp Solutions' }
           ],
+          files: {
+            gstFile: { name: 'GST_Certificate.pdf', size: '245 KB', uploadDate: '2024-01-15' },
+            ndaFile: { name: 'NDA_Signed.pdf', size: '156 KB', uploadDate: '2024-01-15' },
+            agreementFile: { name: 'Vendor_Agreement.pdf', size: '345 KB', uploadDate: '2024-01-15' }
+          },
           documents: [
-            { name: 'Vendor Agreement.pdf', size: '345 KB', uploadDate: '2024-01-15' },
             { name: 'Business License.pdf', size: '256 KB', uploadDate: '2024-01-15' },
             { name: 'Insurance Certificate.pdf', size: '198 KB', uploadDate: '2024-01-20' },
             { name: 'Product Catalog.pdf', size: '2.1 MB', uploadDate: '2024-02-01' }
@@ -712,21 +717,110 @@ const VendorView = () => {
             </div>
           </div>
 
-          {/* Documents */}
-          <div className="card">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Documents</h3>
-            <div className="space-y-3">
-              {vendor.documents.map((doc, index) => (
-                <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">{doc.name}</p>
-                    <p className="text-xs text-gray-500">{doc.size} • {doc.uploadDate}</p>
-                  </div>
-                  <button className="text-blue-600 hover:text-blue-900">
-                    <DocumentArrowDownIcon className="h-4 w-4" />
-                  </button>
+          {/* Documents & Files - Parallel Layout */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Specific Document Files */}
+            <div className="card">
+              <h3 className="text-lg font-semibold text-gray-900 mb-6">Documents & Files</h3>
+
+              <div className="grid grid-cols-1 gap-4">
+                {/* GST File */}
+                <div className="border border-gray-200 rounded-lg p-4">
+                  <h4 className="text-sm font-medium text-gray-900 mb-2">GST File Upload</h4>
+                  {vendor.files?.gstFile ? (
+                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <div className="flex items-center space-x-3">
+                        <DocumentArrowDownIcon className="h-5 w-5 text-gray-400" />
+                        <div>
+                          <p className="text-sm font-medium text-gray-900">{vendor.files.gstFile.name || 'GST Document'}</p>
+                          <p className="text-xs text-gray-500">{vendor.files.gstFile.size || 'Unknown size'}</p>
+                        </div>
+                      </div>
+                      <button className="text-blue-600 hover:text-blue-900">
+                        <DocumentArrowDownIcon className="h-4 w-4" />
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="text-center py-4 text-gray-500">
+                      <DocumentArrowDownIcon className="h-8 w-8 mx-auto mb-2 text-gray-300" />
+                      <p className="text-sm">No GST document uploaded</p>
+                    </div>
+                  )}
                 </div>
-              ))}
+
+                {/* NDA File */}
+                <div className="border border-gray-200 rounded-lg p-4">
+                  <h4 className="text-sm font-medium text-gray-900 mb-2">NDA File Upload</h4>
+                  {vendor.files?.ndaFile ? (
+                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <div className="flex items-center space-x-3">
+                        <DocumentArrowDownIcon className="h-5 w-5 text-gray-400" />
+                        <div>
+                          <p className="text-sm font-medium text-gray-900">{vendor.files.ndaFile.name || 'NDA Document'}</p>
+                          <p className="text-xs text-gray-500">{vendor.files.ndaFile.size || 'Unknown size'}</p>
+                        </div>
+                      </div>
+                      <button className="text-blue-600 hover:text-blue-900">
+                        <DocumentArrowDownIcon className="h-4 w-4" />
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="text-center py-4 text-gray-500">
+                      <DocumentArrowDownIcon className="h-8 w-8 mx-auto mb-2 text-gray-300" />
+                      <p className="text-sm">No NDA document uploaded</p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Agreement File */}
+                <div className="border border-gray-200 rounded-lg p-4">
+                  <h4 className="text-sm font-medium text-gray-900 mb-2">Agreement File Upload</h4>
+                  {vendor.files?.agreementFile ? (
+                    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <div className="flex items-center space-x-3">
+                        <DocumentArrowDownIcon className="h-5 w-5 text-gray-400" />
+                        <div>
+                          <p className="text-sm font-medium text-gray-900">{vendor.files.agreementFile.name || 'Agreement Document'}</p>
+                          <p className="text-xs text-gray-500">{vendor.files.agreementFile.size || 'Unknown size'}</p>
+                        </div>
+                      </div>
+                      <button className="text-blue-600 hover:text-blue-900">
+                        <DocumentArrowDownIcon className="h-4 w-4" />
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="text-center py-4 text-gray-500">
+                      <DocumentArrowDownIcon className="h-8 w-8 mx-auto mb-2 text-gray-300" />
+                      <p className="text-sm">No agreement document uploaded</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Other Documents */}
+            <div className="card">
+              <h3 className="text-lg font-semibold text-gray-900 mb-6">Other Documents</h3>
+              {vendor.documents && vendor.documents.length > 0 ? (
+                <div className="space-y-3">
+                  {vendor.documents.map((doc, index) => (
+                    <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">{doc.name}</p>
+                        <p className="text-xs text-gray-500">{doc.size} • {doc.uploadDate}</p>
+                      </div>
+                      <button className="text-blue-600 hover:text-blue-900">
+                        <DocumentArrowDownIcon className="h-4 w-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  <DocumentArrowDownIcon className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+                  <p className="text-sm">No other documents uploaded</p>
+                </div>
+              )}
             </div>
           </div>
 
