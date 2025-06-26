@@ -178,8 +178,14 @@ const Orders = () => {
           console.log('✅ Setting orders from database:', dbOrders.length, 'orders');
           setOrders(dbOrders);
         } else if (Array.isArray(dbOrders) && dbOrders.length === 0) {
-          console.log('⚠️ Database returned empty array, using demo data');
+          console.log('📝 Database is empty, adding demo orders...');
           setOrders(demoOrders);
+          // Try to save demo data to database in background
+          try {
+            await addDemoOrdersToDatabase();
+          } catch (saveError) {
+            console.log('⚠️ Could not save demo orders to database:', saveError.message);
+          }
         } else {
           console.log('⚠️ Invalid orders data format, using demo data');
           setOrders(demoOrders);
@@ -188,7 +194,14 @@ const Orders = () => {
         console.error('❌ Error loading orders:', err);
         console.error('Error details:', err.message, err.stack);
         // Fallback to demo data if database fails
+        console.log('🔄 Using demo orders as fallback and attempting to save to database');
         setOrders(demoOrders);
+        // Try to save demo data to database in background
+        try {
+          await addDemoOrdersToDatabase();
+        } catch (saveError) {
+          console.log('⚠️ Could not save demo orders to database:', saveError.message);
+        }
       } finally {
         setLoading(false);
       }
@@ -221,6 +234,97 @@ const Orders = () => {
 
     loadActiveWorkTypes();
   }, []);
+
+  // Add demo orders to database
+  const addDemoOrdersToDatabase = async () => {
+    try {
+      console.log('💾 Saving demo orders to database...');
+
+      // First ensure the orders table exists
+      try {
+        const { sql } = await import('../config/database');
+        await sql`
+          CREATE TABLE IF NOT EXISTS orders (
+            id TEXT PRIMARY KEY DEFAULT ('order-' || lower(hex(randomblob(8)))),
+            "orderReferenceNumber" TEXT NOT NULL,
+            "orderOnboardingDate" DATE,
+            client TEXT,
+            "typeOfWork" TEXT,
+            "dateOfWorkCompletionExpected" DATE,
+            "totalInvoiceValue" DECIMAL(15,2),
+            "totalValueGstGovtFees" DECIMAL(15,2),
+            "dateOfPaymentExpected" DATE,
+            "dateOfOnboardingVendor" DATE,
+            "vendorName" TEXT,
+            status TEXT DEFAULT 'Pending',
+            "statusHistory" TEXT,
+            "documentsProvidedByClient" TEXT,
+            "documentsProvidedByVendor" TEXT,
+            "invoiceFromVendor" TEXT,
+            "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            "updatedAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+          )
+        `;
+        console.log('✅ Orders table ready');
+      } catch (tableError) {
+        console.log('⚠️ Table creation issue:', tableError.message);
+      }
+
+      // Try using the order service first
+      try {
+        const { createOrder } = await import('../services/orderService');
+
+        for (const order of demoOrders) {
+          try {
+            await createOrder({
+              orderReferenceNumber: order.orderReferenceNumber,
+              orderOnboardingDate: order.orderOnboardingDate,
+              client: order.client,
+              typeOfWork: order.typeOfWork,
+              dateOfWorkCompletionExpected: order.dateOfWorkCompletionExpected,
+              totalInvoiceValue: order.totalInvoiceValue,
+              totalValueGstGovtFees: order.totalValueGstGovtFees,
+              dateOfPaymentExpected: order.dateOfPaymentExpected,
+              dateOfOnboardingVendor: order.dateOfOnboardingVendor,
+              vendorName: order.vendorName,
+              status: order.status || 'Pending'
+            });
+            console.log(`✅ Saved order to database: ${order.orderReferenceNumber}`);
+          } catch (saveError) {
+            console.log(`⚠️ Could not save order ${order.orderReferenceNumber}:`, saveError.message);
+          }
+        }
+      } catch (serviceError) {
+        console.log('⚠️ Order service failed, trying direct database insertion...');
+
+        // Fallback: Direct database insertion
+        const { sql } = await import('../config/database');
+        for (const order of demoOrders) {
+          try {
+            await sql`
+              INSERT INTO orders (
+                "orderReferenceNumber", "orderOnboardingDate", client, "typeOfWork",
+                "dateOfWorkCompletionExpected", "totalInvoiceValue", "totalValueGstGovtFees",
+                "dateOfPaymentExpected", "dateOfOnboardingVendor", "vendorName", status
+              ) VALUES (
+                ${order.orderReferenceNumber}, ${order.orderOnboardingDate}, ${order.client},
+                ${order.typeOfWork}, ${order.dateOfWorkCompletionExpected},
+                ${parseFloat(order.totalInvoiceValue) || 0}, ${parseFloat(order.totalValueGstGovtFees) || 0},
+                ${order.dateOfPaymentExpected}, ${order.dateOfOnboardingVendor},
+                ${order.vendorName}, ${order.status || 'Pending'}
+              )
+            `;
+            console.log(`✅ Direct insert successful: ${order.orderReferenceNumber}`);
+          } catch (directError) {
+            console.log(`⚠️ Direct insert failed for ${order.orderReferenceNumber}:`, directError.message);
+          }
+        }
+      }
+      console.log('✅ Demo orders saved to database successfully!');
+    } catch (error) {
+      console.log('❌ Error saving demo orders:', error.message);
+    }
+  };
 
   const columns = [
     {
@@ -579,6 +683,13 @@ const Orders = () => {
               </button>
             </>
           )}
+          <button
+            onClick={addDemoOrdersToDatabase}
+            className="btn-secondary flex items-center"
+            title="Save demo data to database"
+          >
+            💾 Save Demo Data
+          </button>
           <button
             onClick={() => setShowAddForm(true)}
             className="btn-primary flex items-center"

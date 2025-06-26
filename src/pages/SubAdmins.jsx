@@ -118,11 +118,31 @@ const SubAdmins = () => {
         const { getAllSubAdmins } = await import('../services/database');
         const dbSubAdmins = await getAllSubAdmins();
         console.log('✅ Sub-admins loaded:', dbSubAdmins);
-        setSubAdmins(dbSubAdmins);
+
+        // If database is empty, add demo data and save to database
+        if (dbSubAdmins && dbSubAdmins.length === 0) {
+          console.log('📝 Database is empty, adding demo sub-admins...');
+          setSubAdmins(demoSubAdmins);
+          // Try to save demo data to database in background
+          try {
+            await addDemoSubAdminsToDatabase();
+          } catch (saveError) {
+            console.log('⚠️ Could not save demo sub-admins to database:', saveError.message);
+          }
+        } else {
+          setSubAdmins(dbSubAdmins);
+        }
       } catch (err) {
         console.error('❌ Error loading sub-admins:', err);
         // Fallback to demo data if database fails
+        console.log('🔄 Using demo sub-admins as fallback and attempting to save to database');
         setSubAdmins(demoSubAdmins);
+        // Try to save demo data to database in background
+        try {
+          await addDemoSubAdminsToDatabase();
+        } catch (saveError) {
+          console.log('⚠️ Could not save demo sub-admins to database:', saveError.message);
+        }
       } finally {
         setLoading(false);
       }
@@ -130,6 +150,87 @@ const SubAdmins = () => {
 
     loadSubAdmins();
   }, []);
+
+  // Add demo sub-admins to database
+  const addDemoSubAdminsToDatabase = async () => {
+    try {
+      console.log('💾 Saving demo sub-admins to database...');
+
+      // First ensure the sub_admins table exists
+      try {
+        const { sql } = await import('../config/database');
+        await sql`
+          CREATE TABLE IF NOT EXISTS sub_admins (
+            id TEXT PRIMARY KEY DEFAULT ('subadmin-' || lower(hex(randomblob(8)))),
+            "subAdminOnboardingDate" DATE,
+            name TEXT NOT NULL,
+            email TEXT NOT NULL,
+            phone TEXT,
+            address TEXT,
+            country TEXT,
+            state TEXT,
+            city TEXT,
+            "termOfWork" TEXT,
+            "isActive" BOOLEAN DEFAULT TRUE,
+            "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            "updatedAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+          )
+        `;
+        console.log('✅ Sub-admins table ready');
+      } catch (tableError) {
+        console.log('⚠️ Table creation issue:', tableError.message);
+      }
+
+      // Try using the sub-admin service first
+      try {
+        const { createSubAdmin } = await import('../services/subAdminService');
+
+        for (const subAdmin of demoSubAdmins) {
+          try {
+            await createSubAdmin({
+              subAdminOnboardingDate: subAdmin.subAdminOnboardingDate,
+              name: subAdmin.name,
+              email: subAdmin.email,
+              phone: subAdmin.phone,
+              address: subAdmin.address,
+              country: subAdmin.country,
+              state: subAdmin.state,
+              city: subAdmin.city,
+              termOfWork: subAdmin.termOfWork
+            });
+            console.log(`✅ Saved sub-admin to database: ${subAdmin.name}`);
+          } catch (saveError) {
+            console.log(`⚠️ Could not save sub-admin ${subAdmin.name}:`, saveError.message);
+          }
+        }
+      } catch (serviceError) {
+        console.log('⚠️ Sub-admin service failed, trying direct database insertion...');
+
+        // Fallback: Direct database insertion
+        const { sql } = await import('../config/database');
+        for (const subAdmin of demoSubAdmins) {
+          try {
+            await sql`
+              INSERT INTO sub_admins (
+                "subAdminOnboardingDate", name, email, phone, address,
+                country, state, city, "termOfWork", "isActive"
+              ) VALUES (
+                ${subAdmin.subAdminOnboardingDate}, ${subAdmin.name}, ${subAdmin.email},
+                ${subAdmin.phone}, ${subAdmin.address}, ${subAdmin.country},
+                ${subAdmin.state}, ${subAdmin.city}, ${subAdmin.termOfWork}, ${true}
+              )
+            `;
+            console.log(`✅ Direct insert successful: ${subAdmin.name}`);
+          } catch (directError) {
+            console.log(`⚠️ Direct insert failed for ${subAdmin.name}:`, directError.message);
+          }
+        }
+      }
+      console.log('✅ Demo sub-admins saved to database successfully!');
+    } catch (error) {
+      console.log('❌ Error saving demo sub-admins:', error.message);
+    }
+  };
 
   const availablePermissions = [
     'Dashboard',
@@ -352,13 +453,22 @@ const SubAdmins = () => {
           <h1 className="text-3xl font-bold text-gray-900">Sub-admins</h1>
           <p className="mt-2 text-gray-600">Manage administrative users and permissions</p>
         </div>
-        <button
-          onClick={() => setShowAddForm(true)}
-          className="btn-primary flex items-center"
-        >
-          <PlusIcon className="h-5 w-5 mr-2" />
-          Add New Sub-admin
-        </button>
+        <div className="flex space-x-3">
+          <button
+            onClick={addDemoSubAdminsToDatabase}
+            className="btn-secondary flex items-center"
+            title="Save demo data to database"
+          >
+            💾 Save Demo Data
+          </button>
+          <button
+            onClick={() => setShowAddForm(true)}
+            className="btn-primary flex items-center"
+          >
+            <PlusIcon className="h-5 w-5 mr-2" />
+            Add New Sub-admin
+          </button>
+        </div>
       </div>
 
       {/* Sub-admins Table */}

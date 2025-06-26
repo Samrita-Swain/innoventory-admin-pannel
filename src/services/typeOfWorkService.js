@@ -68,27 +68,53 @@ export const createTypeOfWork = async (typeOfWorkData) => {
       description
     } = typeOfWorkData;
 
-    // Get an existing user ID for createdById
-    const existingUsers = await sql`SELECT id FROM users LIMIT 1`;
-    const createdById = existingUsers.length > 0 ? existingUsers[0].id : 'admin';
+    // Validate required fields
+    if (!name || !description) {
+      throw new Error('Name and description are required fields');
+    }
 
+    // First ensure the table exists with correct structure
+    try {
+      await sql`
+        CREATE TABLE IF NOT EXISTS type_of_work (
+          id TEXT PRIMARY KEY DEFAULT ('work-' || lower(hex(randomblob(8)))),
+          name TEXT NOT NULL,
+          description TEXT NOT NULL,
+          "isActive" BOOLEAN DEFAULT TRUE,
+          "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          "updatedAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          "createdById" TEXT DEFAULT 'admin'
+        )
+      `;
+    } catch (tableError) {
+      console.log('⚠️ Table creation issue (may already exist):', tableError.message);
+    }
+
+    // Insert the new type of work
     const typeOfWork = await sql`
       INSERT INTO type_of_work (
         name,
         description,
+        "isActive",
+        "createdAt",
         "updatedAt",
         "createdById"
       ) VALUES (
         ${name},
         ${description},
-        NOW(),
-        ${createdById}
+        ${true},
+        CURRENT_TIMESTAMP,
+        CURRENT_TIMESTAMP,
+        ${'admin'}
       )
       RETURNING *
     `;
+
+    console.log('✅ Type of work created successfully:', typeOfWork[0]);
     return typeOfWork[0];
   } catch (error) {
-    console.error('Error creating type of work:', error);
+    console.error('❌ Error creating type of work:', error);
+    console.error('Error details:', error.message);
     throw error;
   }
 };
@@ -101,17 +127,29 @@ export const updateTypeOfWork = async (id, typeOfWorkData) => {
       description
     } = typeOfWorkData;
 
+    // Validate required fields
+    if (!name || !description) {
+      throw new Error('Name and description are required fields');
+    }
+
     const typeOfWork = await sql`
       UPDATE type_of_work SET
         name = ${name},
         description = ${description},
-        "updatedAt" = NOW()
+        "updatedAt" = CURRENT_TIMESTAMP
       WHERE id = ${id}
       RETURNING *
     `;
+
+    if (typeOfWork.length === 0) {
+      throw new Error(`Type of work with id ${id} not found`);
+    }
+
+    console.log('✅ Type of work updated successfully:', typeOfWork[0]);
     return typeOfWork[0];
   } catch (error) {
-    console.error('Error updating type of work:', error);
+    console.error('❌ Error updating type of work:', error);
+    console.error('Error details:', error.message);
     throw error;
   }
 };

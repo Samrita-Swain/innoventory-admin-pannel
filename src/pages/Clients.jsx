@@ -132,11 +132,31 @@ const Clients = () => {
 
         console.log('✅ Clients loaded:', dbClients);
         console.log('📊 First client structure:', dbClients[0]);
-        setClients(dbClients);
+
+        // If database is empty, add demo data and save to database
+        if (dbClients && dbClients.length === 0) {
+          console.log('📝 Database is empty, adding demo clients...');
+          setClients(demoClients);
+          // Try to save demo data to database in background
+          try {
+            await addDemoClientsToDatabase();
+          } catch (saveError) {
+            console.log('⚠️ Could not save demo clients to database:', saveError.message);
+          }
+        } else {
+          setClients(dbClients);
+        }
       } catch (err) {
         console.error('❌ Error loading clients:', err);
         // Fallback to demo data if database fails
+        console.log('🔄 Using demo clients as fallback and attempting to save to database');
         setClients(demoClients);
+        // Try to save demo data to database in background
+        try {
+          await addDemoClientsToDatabase();
+        } catch (saveError) {
+          console.log('⚠️ Could not save demo clients to database:', saveError.message);
+        }
       } finally {
         setLoading(false);
       }
@@ -144,6 +164,97 @@ const Clients = () => {
 
     loadClients();
   }, []);
+
+  // Add demo clients to database
+  const addDemoClientsToDatabase = async () => {
+    try {
+      console.log('💾 Saving demo clients to database...');
+
+      // First ensure the clients table exists
+      try {
+        const { sql } = await import('../config/database');
+        await sql`
+          CREATE TABLE IF NOT EXISTS clients (
+            id TEXT PRIMARY KEY DEFAULT ('client-' || lower(hex(randomblob(8)))),
+            "onboardingDate" DATE,
+            "companyType" TEXT,
+            "companyName" TEXT NOT NULL,
+            emails TEXT,
+            phones TEXT,
+            address TEXT,
+            country TEXT,
+            state TEXT,
+            city TEXT,
+            "isDpiitRegistered" BOOLEAN DEFAULT FALSE,
+            "dpiitNumber" TEXT,
+            "dpiitCertificate" TEXT,
+            "isActive" BOOLEAN DEFAULT TRUE,
+            "totalProjects" INTEGER DEFAULT 0,
+            "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            "updatedAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+          )
+        `;
+        console.log('✅ Clients table ready');
+      } catch (tableError) {
+        console.log('⚠️ Table creation issue:', tableError.message);
+      }
+
+      // Try using the client service first
+      try {
+        const { createClient } = await import('../services/clientService');
+
+        for (const client of demoClients) {
+          try {
+            await createClient({
+              onboardingDate: client.onboarding_date,
+              companyType: client.company_type,
+              companyName: client.company_name,
+              emails: client.emails,
+              phones: client.phones,
+              address: client.address,
+              country: client.country,
+              state: client.state,
+              city: client.city,
+              isDpiitRegistered: client.is_dpiit_registered,
+              dpiitNumber: client.dpiit_number,
+              dpiitCertificate: client.dpiit_certificate
+            });
+            console.log(`✅ Saved client to database: ${client.company_name}`);
+          } catch (saveError) {
+            console.log(`⚠️ Could not save client ${client.company_name}:`, saveError.message);
+          }
+        }
+      } catch (serviceError) {
+        console.log('⚠️ Client service failed, trying direct database insertion...');
+
+        // Fallback: Direct database insertion
+        const { sql } = await import('../config/database');
+        for (const client of demoClients) {
+          try {
+            await sql`
+              INSERT INTO clients (
+                "onboardingDate", "companyType", "companyName", emails, phones,
+                address, country, state, city, "isDpiitRegistered", "dpiitNumber",
+                "dpiitCertificate", "isActive", "totalProjects"
+              ) VALUES (
+                ${client.onboarding_date}, ${client.company_type}, ${client.company_name},
+                ${JSON.stringify(client.emails)}, ${JSON.stringify(client.phones)},
+                ${client.address}, ${client.country}, ${client.state}, ${client.city},
+                ${client.is_dpiit_registered}, ${client.dpiit_number || ''},
+                ${client.dpiit_certificate || ''}, ${true}, ${client.total_projects || 0}
+              )
+            `;
+            console.log(`✅ Direct insert successful: ${client.company_name}`);
+          } catch (directError) {
+            console.log(`⚠️ Direct insert failed for ${client.company_name}:`, directError.message);
+          }
+        }
+      }
+      console.log('✅ Demo clients saved to database successfully!');
+    } catch (error) {
+      console.log('❌ Error saving demo clients:', error.message);
+    }
+  };
 
   // Handle client deletion
   const handleDeleteClient = async (clientId) => {
@@ -451,13 +562,22 @@ const Clients = () => {
           <h1 className="text-3xl font-bold text-gray-900">Clients</h1>
           <p className="mt-2 text-gray-600">Manage your client relationships</p>
         </div>
-        <button
-          onClick={() => setShowAddForm(true)}
-          className="btn-primary flex items-center"
-        >
-          <PlusIcon className="h-5 w-5 mr-2" />
-          Add New Client
-        </button>
+        <div className="flex space-x-3">
+          <button
+            onClick={addDemoClientsToDatabase}
+            className="btn-secondary flex items-center"
+            title="Save demo data to database"
+          >
+            💾 Save Demo Data
+          </button>
+          <button
+            onClick={() => setShowAddForm(true)}
+            className="btn-primary flex items-center"
+          >
+            <PlusIcon className="h-5 w-5 mr-2" />
+            Add New Client
+          </button>
+        </div>
       </div>
 
       {/* Clients Table */}
