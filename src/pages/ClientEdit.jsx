@@ -59,50 +59,73 @@ const ClientEdit = () => {
   const [availableCities, setAvailableCities] = useState([]);
 
   useEffect(() => {
-    // Load client data - in real app, this would come from API
-    setTimeout(() => {
-      const sampleClient = {
-        id: id || '1',
-        onboardingDate: '2024-01-10',
-        companyType: 'Startup',
-        companyName: 'Acme Corporation',
-        emails: ['contact@acme.com', 'support@acme.com'],
-        phones: ['+1-555-123-4567', '+1-555-123-4568'],
-        address: '123 Business St, New York, NY 10001',
-        country: 'United States',
-        state: 'New York',
-        city: 'New York City',
-        username: 'acmecorp',
-        gstNumber: 'GST123456789',
-        dpiitRegistered: 'yes',
-        validTill: '2025-12-31',
-        website: 'https://acme.com',
-        description: 'Leading technology company specializing in innovative solutions.',
-        uploadedFiles: {
-          dpiitCertificate: 'dpiit_certificate_acme.pdf',
-          tdsFile: 'tds_file_acme.pdf',
-          gstFile: 'gst_certificate_acme.pdf',
-          ndaFile: 'nda_agreement_acme.pdf',
-          agreementFile: 'service_agreement_acme.pdf',
-          quotationFile: 'quotation_2024_acme.pdf',
-          panCardFile: 'pan_card_acme.pdf',
-          udhyamRegistrationFile: 'udhyam_registration_acme.pdf'
-        }
-      };
+    const loadClient = async () => {
+      try {
+        setLoading(true);
+        console.log('🔄 Loading client data for editing, ID:', id);
 
-      setFormData(sampleClient);
-      setUploadedFiles(sampleClient.uploadedFiles);
+        // Import and use database service
+        const { getClientById } = await import('../services/clientService');
+        const clientData = await getClientById(id);
 
-      // Set states and cities based on country
-      if (sampleClient.country && countryStateCity[sampleClient.country]) {
-        setAvailableStates(Object.keys(countryStateCity[sampleClient.country]));
-        if (sampleClient.state && countryStateCity[sampleClient.country][sampleClient.state]) {
-          setAvailableCities(countryStateCity[sampleClient.country][sampleClient.state]);
+        if (clientData) {
+          console.log('✅ Client data loaded for editing:', clientData);
+
+          // Populate form with client data
+          setFormData({
+            onboardingDate: clientData.onboarding_date || '',
+            companyType: clientData.company_type || '',
+            companyName: clientData.company_name || '',
+            emails: Array.isArray(clientData.emails) ? clientData.emails : [''],
+            phones: Array.isArray(clientData.phones) ? clientData.phones : [''],
+            address: clientData.address || '',
+            country: clientData.country || '',
+            state: clientData.state || '',
+            city: clientData.city || '',
+            username: clientData.username || '',
+            gstNumber: clientData.gst_number || '',
+            dpiitRegistered: clientData.dpiit_registered ? 'yes' : 'no',
+            validTill: clientData.valid_till || '',
+            website: clientData.website || '',
+            description: clientData.description || ''
+          });
+
+          // Set uploaded files if they exist
+          if (clientData.files) {
+            setUploadedFiles(clientData.files);
+          }
+        } else {
+          console.log('❌ Client not found');
+          alert('Client not found');
+          navigate('/clients');
         }
+      } catch (error) {
+        console.error('❌ Error loading client:', error);
+        alert('Failed to load client data');
+        navigate('/clients');
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
-    }, 500);
-  }, [id]);
+    };
+
+    loadClient();
+  }, [id, navigate]);
+
+  // Update cascading dropdowns when form data changes
+  useEffect(() => {
+    if (formData.country) {
+      setAvailableStates(Object.keys(countryStateCity[formData.country] || {}));
+
+      if (formData.state) {
+        setAvailableCities(countryStateCity[formData.country]?.[formData.state] || []);
+      } else {
+        setAvailableCities([]);
+      }
+    } else {
+      setAvailableStates([]);
+      setAvailableCities([]);
+    }
+  }, [formData.country, formData.state]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -189,12 +212,44 @@ const ClientEdit = () => {
     setUploadedFiles(files);
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log('Updated Client Data:', formData);
-    console.log('Uploaded Files:', uploadedFiles);
-    // Here you would typically send the data to your backend
-    navigate(`/clients/${id}`);
+
+    try {
+      setLoading(true);
+      console.log('💾 Updating client data:', formData);
+      console.log('📁 Uploaded Files:', uploadedFiles);
+
+      // Prepare client data for database
+      const clientData = {
+        companyName: formData.companyName,
+        companyType: formData.companyType,
+        onboardingDate: formData.onboardingDate,
+        emails: formData.emails.filter(email => email.trim() !== ''),
+        phones: formData.phones.filter(phone => phone.trim() !== ''),
+        address: formData.address,
+        country: formData.country,
+        state: formData.state,
+        city: formData.city,
+        dpiitRegistered: formData.dpiitRegistered === 'yes',
+        dpiitNumber: formData.dpiitRegistered === 'yes' ? formData.validTill : null,
+        files: uploadedFiles,
+        status: 'Active'
+      };
+
+      // Import and use database service
+      const { updateClient } = await import('../services/clientService');
+      const updatedClient = await updateClient(id, clientData);
+
+      console.log('✅ Client updated successfully:', updatedClient);
+      alert('Client updated successfully!');
+      navigate(`/clients/${id}`);
+    } catch (error) {
+      console.error('❌ Error updating client:', error);
+      alert('Failed to update client. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (loading) {
@@ -206,9 +261,10 @@ const ClientEdit = () => {
   }
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="min-h-screen bg-gray-50">
+      <div className="w-full px-1 py-2">
       {/* Header */}
-      <div className="mb-8">
+      <div className="mb-4">
         <div className="flex items-center space-x-4">
           <button
             onClick={() => navigate(`/clients/${id}`)}
@@ -224,8 +280,8 @@ const ClientEdit = () => {
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+      <form onSubmit={handleSubmit} className="space-y-4 pb-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {/* Basic Information */}
           <div className="card">
             <h2 className="text-xl font-semibold text-gray-900 mb-6">Basic Information</h2>
@@ -564,7 +620,7 @@ const ClientEdit = () => {
         {/* File Upload Section */}
         <div className="card">
           <h2 className="text-xl font-semibold text-gray-900 mb-6">File Upload Section</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4">
 
             {/* TDS File */}
             <div>
@@ -780,6 +836,7 @@ const ClientEdit = () => {
           </button>
         </div>
       </form>
+      </div>
     </div>
   );
 };

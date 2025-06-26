@@ -7,6 +7,7 @@ const OrderEdit = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
+  const [activeWorkTypes, setActiveWorkTypes] = useState([]);
   const [formData, setFormData] = useState({
     orderOnboardingDate: '',
     orderReferenceNumber: '',
@@ -43,74 +44,141 @@ const OrderEdit = () => {
   const [statusHistory, setStatusHistory] = useState([]);
 
   useEffect(() => {
-    // Load order data from localStorage or use sample data
-    setTimeout(() => {
-      const savedOrders = localStorage.getItem('orders');
-      let ordersList = [];
+    const loadOrder = async () => {
+      try {
+        setLoading(true);
+        console.log('🔄 Loading order data for editing, ID:', id);
 
-      if (savedOrders) {
-        ordersList = JSON.parse(savedOrders);
+        // Import and use database service
+        const { getOrderById } = await import('../services/orderService');
+        const orderData = await getOrderById(id);
+
+        if (orderData) {
+          console.log('✅ Order loaded for editing:', orderData);
+          setFormData({
+            orderOnboardingDate: orderData.orderOnboardingDate || '',
+            orderReferenceNumber: orderData.orderReferenceNumber || '',
+            client: orderData.client || '',
+            typeOfWork: orderData.typeOfWork || '',
+            dateOfWorkCompletionExpected: orderData.dateOfWorkCompletionExpected || '',
+            totalInvoiceValue: orderData.totalInvoiceValue || '',
+            totalValueGstGovtFees: orderData.totalValueGstGovtFees || '',
+            dateOfPaymentExpected: orderData.dateOfPaymentExpected || '',
+            dateOfOnboardingVendor: orderData.dateOfOnboardingVendor || '',
+            vendorName: orderData.vendorName || '',
+            currentStatus: orderData.currentStatus || '',
+            statusComments: orderData.statusComments || '',
+            dateOfStatusChange: orderData.dateOfStatusChange || '',
+            dateOfWorkCompletionExpectedFromVendor: orderData.dateOfWorkCompletionExpectedFromVendor || '',
+            amountToBePaidToVendor: orderData.amountToBePaidToVendor || '',
+            amountPaidToVendor: orderData.amountPaidToVendor || '',
+            vendor: orderData.vendor || '',
+            orderType: orderData.orderType || '',
+            priority: orderData.priority || '',
+            description: orderData.description || '',
+            deliveryAddress: orderData.deliveryAddress || '',
+            specialInstructions: orderData.specialInstructions || '',
+            items: orderData.items || []
+          });
+
+          if (orderData.files) {
+            setUploadedFiles(orderData.files);
+          }
+
+          if (orderData.statusHistory) {
+            setStatusHistory(orderData.statusHistory);
+          }
+        } else {
+          console.log('❌ Order not found, creating new order form');
+          // Create a new order form with the given ID
+          setFormData({
+            orderOnboardingDate: new Date().toISOString().split('T')[0],
+            orderReferenceNumber: `IS-${Date.now()}`,
+            client: '',
+            typeOfWork: '',
+            dateOfWorkCompletionExpected: '',
+            totalInvoiceValue: '',
+            totalValueGstGovtFees: '',
+            dateOfPaymentExpected: '',
+            dateOfOnboardingVendor: '',
+            vendorName: '',
+            currentStatus: 'Pending',
+            statusComments: '',
+            dateOfStatusChange: new Date().toISOString().split('T')[0],
+            dateOfWorkCompletionExpectedFromVendor: '',
+            amountToBePaidToVendor: '',
+            amountPaidToVendor: '',
+            vendor: '',
+            orderType: '',
+            priority: 'Medium',
+            description: '',
+            deliveryAddress: '',
+            specialInstructions: '',
+            items: []
+          });
+          console.log('✅ Initialized new order form for ID:', id);
+        }
+      } catch (error) {
+        console.error('❌ Error loading order for editing:', error);
+        // Create a new order form instead of using demo data
+        setFormData({
+          orderOnboardingDate: new Date().toISOString().split('T')[0],
+          orderReferenceNumber: `IS-${Date.now()}`,
+          client: '',
+          typeOfWork: '',
+          dateOfWorkCompletionExpected: '',
+          totalInvoiceValue: '',
+          totalValueGstGovtFees: '',
+          dateOfPaymentExpected: '',
+          dateOfOnboardingVendor: '',
+          vendorName: '',
+          currentStatus: 'Pending',
+          statusComments: '',
+          dateOfStatusChange: new Date().toISOString().split('T')[0],
+          dateOfWorkCompletionExpectedFromVendor: '',
+          amountToBePaidToVendor: '',
+          amountPaidToVendor: '',
+          vendor: '',
+          orderType: '',
+          priority: 'Medium',
+          description: '',
+          deliveryAddress: '',
+          specialInstructions: '',
+          items: []
+        });
+        console.log('✅ Initialized new order form due to loading error');
+      } finally {
+        setLoading(false);
       }
+    };
 
-      const foundOrder = ordersList.find(o => o.id === id || o.id === parseInt(id) || o.id.toString() === id);
-
-      let sampleOrder;
-      if (foundOrder) {
-        sampleOrder = {
-          id: foundOrder.id,
-          client: foundOrder.client && foundOrder.client !== 'null' ? foundOrder.client : '',
-          vendor: foundOrder.vendor && foundOrder.vendor !== 'null' ? foundOrder.vendor : '',
-          orderType: foundOrder.orderType && foundOrder.orderType !== 'null' ? foundOrder.orderType : '',
-          priority: foundOrder.priority && foundOrder.priority !== 'null' ? foundOrder.priority : '',
-          description: foundOrder.description && foundOrder.description !== 'null' ? foundOrder.description : '',
-          deliveryAddress: foundOrder.deliveryAddress && foundOrder.deliveryAddress !== 'null' ? foundOrder.deliveryAddress : '',
-          specialInstructions: foundOrder.specialInstructions && foundOrder.specialInstructions !== 'null' ? foundOrder.specialInstructions : '',
-          items: foundOrder.items && Array.isArray(foundOrder.items) ? foundOrder.items.map(item => ({
-            id: item.id || Date.now(),
-            name: item.name && item.name !== 'null' ? item.name : '',
-            quantity: item.quantity && item.quantity !== 'null' ? item.quantity : '',
-            unitPrice: item.unitPrice && item.unitPrice !== 'null' ? item.unitPrice : '',
-            total: item.total && item.total !== 'null' ? item.total : 0
-          })) : []
-        };
-      } else {
-        // Fallback sample order if not found
-        sampleOrder = {
-          id: id || 'ORD-001',
-          orderReferenceNumber: 'IS-1703845200000',
-          orderOnboardingDate: '2024-06-20',
-          client: 'Acme Corporation',
-          typeOfWork: 'Patent Filing',
-          dateOfWorkCompletionExpected: '2024-07-20',
-          totalInvoiceValue: '245000',
-          totalValueGstGovtFees: '44100',
-          dateOfPaymentExpected: '2024-07-25',
-          dateOfOnboardingVendor: '2024-06-21',
-          vendorName: 'Legal Associates',
-          currentStatus: 'Completed',
-          statusComments: 'Work completed successfully',
-          dateOfStatusChange: '2024-07-18',
-          dateOfWorkCompletionExpectedFromVendor: '2024-07-15',
-          amountToBePaidToVendor: '150000',
-          amountPaidToVendor: '150000',
-          // Legacy fields for compatibility
-          vendor: 'ABC Supplies',
-          orderType: 'Purchase Order',
-          priority: 'High',
-          description: 'Office supplies and equipment for Q2 operations',
-          deliveryAddress: '123 Business St, New York, NY 10001',
-          specialInstructions: 'Deliver to loading dock. Contact security for access.',
-          items: [
-            { id: 1, name: 'Office Chairs', quantity: 10, unitPrice: 15000.00, total: 150000.00 },
-            { id: 2, name: 'Desk Lamps', quantity: 15, unitPrice: 4500.00, total: 67500.00 },
-            { id: 3, name: 'Filing Cabinets', quantity: 5, unitPrice: 5500.00, total: 27500.00 }
-          ]
-        };
-      }
-      setFormData(sampleOrder);
-      setLoading(false);
-    }, 500);
+    loadOrder();
   }, [id]);
+
+  // Load active work types for dropdown
+  useEffect(() => {
+    const loadActiveWorkTypes = async () => {
+      try {
+        console.log('🔄 Loading active work types for dropdown...');
+        const { getActiveTypeOfWork } = await import('../services/database');
+        const workTypes = await getActiveTypeOfWork();
+        setActiveWorkTypes(workTypes);
+        console.log('✅ Active work types loaded:', workTypes.length);
+      } catch (error) {
+        console.error('❌ Error loading active work types:', error);
+        // Fallback to demo data
+        setActiveWorkTypes([
+          { id: 1, name: 'Patent Filing' },
+          { id: 2, name: 'Trademark Registration' },
+          { id: 3, name: 'Copyright Registration' },
+          { id: 4, name: 'Design Registration' },
+          { id: 5, name: 'Legal Consultation' }
+        ]);
+      }
+    };
+
+    loadActiveWorkTypes();
+  }, []);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -239,12 +307,64 @@ const OrderEdit = () => {
     setUploadedFiles(files);
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log('Updated Order Data:', formData);
-    console.log('Uploaded Files:', uploadedFiles);
-    // Here you would typically send the data to your backend
-    navigate(`/orders/${id}`);
+
+    try {
+      console.log('🔄 Updating order data:', formData);
+      console.log('🔄 Uploaded Files:', uploadedFiles);
+      console.log('🔄 Status History:', statusHistory);
+
+      // Import and use database service
+      const { updateOrder } = await import('../services/orderService');
+
+      // Prepare order data for database with proper field mapping
+      const orderData = {
+        ...formData,
+        // Add explicit field mappings for clarity
+        description: formData.typeOfWork || formData.description || formData.statusComments || '',
+        amount: parseFloat(formData.totalInvoiceValue || 0),
+        status: formData.currentStatus || 'Pending',
+        priority: formData.priority || 'Medium',
+        files: uploadedFiles,
+        statusHistory: statusHistory
+      };
+
+      console.log('📋 Prepared order data for update:', orderData);
+
+      const result = await updateOrder(id, orderData);
+
+      console.log('✅ Order updated successfully:', result);
+      alert('Order updated successfully!');
+      navigate(`/orders/${id}`);
+    } catch (error) {
+      console.error('❌ Error updating order:', error);
+      console.error('❌ Error message:', error.message);
+      console.error('❌ Error stack:', error.stack);
+
+      // Show more specific error message
+      const errorMessage = error.message || 'Unknown error occurred';
+
+      // If the error is about order not existing, offer to create it
+      if (errorMessage.includes('does not exist')) {
+        const createNew = confirm(`Order with ID ${id} does not exist. Would you like to create it as a new order?`);
+        if (createNew) {
+          try {
+            // Try again - the service will create the order if it doesn't exist
+            const result = await updateOrder(id, orderData);
+            console.log('✅ Order created successfully:', result);
+            alert('Order created successfully!');
+            navigate(`/orders/${id}`);
+            return;
+          } catch (createError) {
+            console.error('❌ Error creating order:', createError);
+            alert(`Failed to create order: ${createError.message}`);
+          }
+        }
+      }
+
+      alert(`Failed to update order: ${errorMessage}\n\nPlease check the console for more details and try again.`);
+    }
   };
 
   if (loading) {
@@ -347,11 +467,11 @@ const OrderEdit = () => {
                 className="input-field"
               >
                 <option value="">Select type of work</option>
-                <option value="Patent Filing">Patent Filing</option>
-                <option value="Trademark Registration">Trademark Registration</option>
-                <option value="Copyright Registration">Copyright Registration</option>
-                <option value="Design Registration">Design Registration</option>
-                <option value="Legal Consultation">Legal Consultation</option>
+                {activeWorkTypes.map(workType => (
+                  <option key={workType.id} value={workType.name}>
+                    {workType.name}
+                  </option>
+                ))}
               </select>
             </div>
 

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PlusIcon, EyeIcon, PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
 import DataTable from '../components/DataTable/DataTable';
@@ -7,6 +7,7 @@ import FileUpload from '../components/FileUpload/FileUpload';
 const Orders = () => {
   const navigate = useNavigate();
   const [showAddForm, setShowAddForm] = useState(false);
+  const [activeWorkTypes, setActiveWorkTypes] = useState([]);
   const [formData, setFormData] = useState({
     orderOnboardingDate: '',
     orderReferenceNumber: '',
@@ -42,10 +43,13 @@ const Orders = () => {
   });
   const [statusHistory, setStatusHistory] = useState([]);
 
-  // Sample order data
-  const orders = [
+  // Demo data for display (not saved to database)
+  const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const demoOrders = [
     {
-      id: 'ORD-001',
+      id: 'demo-ord-001',
       orderReferenceNumber: 'IS-1703845200000',
       orderOnboardingDate: '2024-06-20',
       client: 'Acme Corporation',
@@ -64,7 +68,7 @@ const Orders = () => {
       amountPaidToVendor: '150000'
     },
     {
-      id: 'ORD-002',
+      id: 'demo-ord-002',
       orderReferenceNumber: 'IS-1703845260000',
       orderOnboardingDate: '2024-06-22',
       client: 'Global Tech Inc',
@@ -83,7 +87,7 @@ const Orders = () => {
       amountPaidToVendor: '60000'
     },
     {
-      id: 'ORD-003',
+      id: 'demo-ord-003',
       orderReferenceNumber: 'IS-1703845320000',
       orderOnboardingDate: '2024-06-24',
       client: 'StartUp Solutions',
@@ -102,6 +106,121 @@ const Orders = () => {
       amountPaidToVendor: '0'
     },
   ];
+
+  // Manual refresh function for debugging
+  const manualRefreshOrders = async () => {
+    try {
+      setLoading(true);
+      console.log('🔄 Manual refresh triggered...');
+
+      // Test database connection first
+      const { sql } = await import('../config/database');
+      const testQuery = await sql`SELECT COUNT(*) as count FROM orders`;
+      console.log('📊 Database test - orders count:', testQuery[0]?.count);
+
+      // Get raw data
+      const rawOrders = await sql`SELECT * FROM orders LIMIT 5`;
+      console.log('📋 Raw orders from DB:', rawOrders);
+
+      // Import and use order service
+      const { getAllOrders } = await import('../services/orderService');
+      const dbOrders = await getAllOrders();
+
+      console.log('✅ Service returned:', dbOrders);
+
+      if (Array.isArray(dbOrders) && dbOrders.length > 0) {
+        setOrders(dbOrders);
+        console.log('✅ Orders set successfully');
+      } else {
+        console.log('⚠️ No orders returned, using demo data');
+        setOrders(demoOrders);
+      }
+    } catch (error) {
+      console.error('❌ Manual refresh failed:', error);
+      setOrders(demoOrders);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Add to window for debugging
+  if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
+    window.manualRefreshOrders = manualRefreshOrders;
+  }
+
+  // Load orders from database
+  useEffect(() => {
+    const loadOrders = async () => {
+      try {
+        setLoading(true);
+        console.log('🔄 Loading orders from database...');
+
+        // Test database connection first
+        try {
+          const { sql } = await import('../config/database');
+          const testQuery = await sql`SELECT COUNT(*) as count FROM orders`;
+          console.log('📊 Database test - orders count:', testQuery[0]?.count);
+        } catch (dbTestError) {
+          console.error('❌ Database test failed:', dbTestError);
+        }
+
+        // Import and use order service
+        const { getAllOrders } = await import('../services/orderService');
+        const dbOrders = await getAllOrders();
+
+        console.log('✅ Orders loaded:', dbOrders);
+        console.log('📊 Orders count:', dbOrders?.length);
+        console.log('📋 Orders data type:', typeof dbOrders);
+        console.log('🔍 Is array:', Array.isArray(dbOrders));
+
+        // Check if we got valid data
+        if (Array.isArray(dbOrders) && dbOrders.length > 0) {
+          console.log('✅ Setting orders from database:', dbOrders.length, 'orders');
+          setOrders(dbOrders);
+        } else if (Array.isArray(dbOrders) && dbOrders.length === 0) {
+          console.log('⚠️ Database returned empty array, using demo data');
+          setOrders(demoOrders);
+        } else {
+          console.log('⚠️ Invalid orders data format, using demo data');
+          setOrders(demoOrders);
+        }
+      } catch (err) {
+        console.error('❌ Error loading orders:', err);
+        console.error('Error details:', err.message, err.stack);
+        // Fallback to demo data if database fails
+        setOrders(demoOrders);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadOrders();
+  }, []);
+
+  // Load active work types for dropdown
+  useEffect(() => {
+    const loadActiveWorkTypes = async () => {
+      try {
+        console.log('🔄 Loading active work types for dropdown...');
+        const { getActiveTypeOfWork } = await import('../services/database');
+        const workTypes = await getActiveTypeOfWork();
+        setActiveWorkTypes(workTypes);
+        console.log('✅ Active work types loaded:', workTypes.length);
+      } catch (error) {
+        console.error('❌ Error loading active work types:', error);
+        // Fallback to demo data
+        setActiveWorkTypes([
+          { id: 1, name: 'Patent Filing' },
+          { id: 2, name: 'Trademark Registration' },
+          { id: 3, name: 'Copyright Registration' },
+          { id: 4, name: 'Design Registration' },
+          { id: 5, name: 'Legal Consultation' }
+        ]);
+      }
+    };
+
+    loadActiveWorkTypes();
+  }, []);
 
   const columns = [
     {
@@ -200,8 +319,9 @@ const Orders = () => {
             <PencilIcon className="h-4 w-4" />
           </button>
           <button
+            onClick={() => handleDeleteOrder(row.id)}
             className="text-red-600 hover:text-red-900 p-1 hover:bg-red-50 rounded"
-            title="Cancel Order"
+            title="Delete Order"
           >
             <TrashIcon className="h-4 w-4" />
           </button>
@@ -209,6 +329,46 @@ const Orders = () => {
       )
     }
   ];
+
+  const handleDeleteOrder = async (orderId) => {
+    if (!confirm('Are you sure you want to delete this order? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      console.log('🔄 Deleting order:', orderId);
+
+      // Import and use database service
+      const { deleteOrder } = await import('../services/orderService');
+      await deleteOrder(orderId);
+
+      console.log('✅ Order deleted successfully');
+      alert('Order deleted successfully');
+
+      // Refresh the orders list
+      setOrders(prevOrders => prevOrders.filter(order => order.id !== orderId));
+    } catch (error) {
+      console.error('❌ Error deleting order:', error);
+      alert('Failed to delete order');
+    }
+  };
+
+  const handleExportOrders = async (format) => {
+    try {
+      console.log(`🔄 Exporting orders as ${format}...`);
+
+      if (format === 'excel' || format === 'csv') {
+        const { exportOrdersToExcel } = await import('../utils/exportUtils');
+        await exportOrdersToExcel(orders);
+      } else if (format === 'pdf') {
+        // For PDF export of all orders, we could create a summary page
+        alert('PDF export of all orders is not yet implemented. Please use Excel export or export individual orders.');
+      }
+    } catch (error) {
+      console.error('❌ Error exporting orders:', error);
+      alert('Failed to export orders');
+    }
+  };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -387,14 +547,97 @@ const Orders = () => {
           <h1 className="text-3xl font-bold text-gray-900">Orders</h1>
           <p className="mt-2 text-gray-600">Track and manage all orders</p>
         </div>
-        <button
-          onClick={() => setShowAddForm(true)}
-          className="btn-primary flex items-center"
-        >
-          <PlusIcon className="h-5 w-5 mr-2" />
-          Add New Order
-        </button>
+        <div className="flex space-x-2">
+          {process.env.NODE_ENV === 'development' && (
+            <>
+              <button
+                onClick={() => window.location.reload()}
+                className="btn-secondary flex items-center"
+              >
+                🔄 Refresh Page
+              </button>
+              <button
+                onClick={async () => {
+                  try {
+                    const { refreshDatabaseData } = await import('../config/database');
+                    await refreshDatabaseData();
+                    window.location.reload();
+                  } catch (error) {
+                    console.error('Error refreshing database:', error);
+                    alert('Error refreshing database: ' + error.message);
+                  }
+                }}
+                className="btn-secondary flex items-center"
+              >
+                🗄️ Refresh DB
+              </button>
+              <button
+                onClick={manualRefreshOrders}
+                className="btn-secondary flex items-center"
+              >
+                🔄 Test Orders
+              </button>
+            </>
+          )}
+          <button
+            onClick={() => setShowAddForm(true)}
+            className="btn-primary flex items-center"
+          >
+            <PlusIcon className="h-5 w-5 mr-2" />
+            Add New Order
+          </button>
+        </div>
       </div>
+
+      {/* Debug Info */}
+      {process.env.NODE_ENV === 'development' && (
+        <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+          <h3 className="font-semibold text-yellow-800">Debug Info:</h3>
+          <p className="text-sm text-yellow-700">Orders count: {orders?.length || 0}</p>
+          <p className="text-sm text-yellow-700">Loading: {loading ? 'Yes' : 'No'}</p>
+          <p className="text-sm text-yellow-700">Orders type: {typeof orders}</p>
+          <p className="text-sm text-yellow-700">Is array: {Array.isArray(orders) ? 'Yes' : 'No'}</p>
+          {orders?.length > 0 && (
+            <details className="mt-2">
+              <summary className="text-sm text-yellow-700 cursor-pointer">First order data</summary>
+              <pre className="text-xs text-yellow-600 mt-1 overflow-auto max-h-32">
+                {JSON.stringify(orders[0], null, 2)}
+              </pre>
+            </details>
+          )}
+        </div>
+      )}
+
+      {/* Simple Debug Table */}
+      {process.env.NODE_ENV === 'development' && orders?.length > 0 && (
+        <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+          <h3 className="font-semibold text-green-800 mb-2">Simple Data Display (Debug):</h3>
+          <div className="overflow-x-auto">
+            <table className="min-w-full border border-gray-300">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="border border-gray-300 px-2 py-1 text-left">ID</th>
+                  <th className="border border-gray-300 px-2 py-1 text-left">Reference</th>
+                  <th className="border border-gray-300 px-2 py-1 text-left">Client</th>
+                  <th className="border border-gray-300 px-2 py-1 text-left">Status</th>
+                  <th className="border border-gray-300 px-2 py-1 text-left">Amount</th>
+                </tr>
+              </thead>
+              <tbody>
+                {orders.slice(0, 5).map((order, index) => (
+                  <tr key={order.id || index} className="hover:bg-gray-50">
+                    <td className="border border-gray-300 px-2 py-1">{order.id}</td>
+                    <td className="border border-gray-300 px-2 py-1">{order.orderReferenceNumber}</td>
+                    <td className="border border-gray-300 px-2 py-1">{order.client}</td>
+                    <td className="border border-gray-300 px-2 py-1">{order.currentStatus}</td>
+                    <td className="border border-gray-300 px-2 py-1">₹{order.totalInvoiceValue}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       {/* Orders Table */}
       <DataTable
@@ -406,6 +649,7 @@ const Orders = () => {
         enableColumnToggle={true}
         enableFiltering={true}
         enableSorting={true}
+        onExport={handleExportOrders}
       />
 
       {/* Add Order Modal */}
@@ -545,11 +789,11 @@ const Orders = () => {
                         className="input-field"
                       >
                         <option value="">Select type of work</option>
-                        <option value="Patent Filing">Patent Filing</option>
-                        <option value="Trademark Registration">Trademark Registration</option>
-                        <option value="Copyright Registration">Copyright Registration</option>
-                        <option value="Design Registration">Design Registration</option>
-                        <option value="Legal Consultation">Legal Consultation</option>
+                        {activeWorkTypes.map(workType => (
+                          <option key={workType.id} value={workType.name}>
+                            {workType.name}
+                          </option>
+                        ))}
                       </select>
                     </div>
 

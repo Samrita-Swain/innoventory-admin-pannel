@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeftIcon } from '@heroicons/react/24/outline';
 import FileUpload from '../components/FileUpload/FileUpload';
+import { getVendorById, updateVendor } from '../services/vendorService';
 
 const VendorEdit = () => {
   const { id } = useParams();
@@ -54,32 +55,32 @@ const VendorEdit = () => {
   const [availableCities, setAvailableCities] = useState([]);
 
   useEffect(() => {
-    // Load vendor data from localStorage
-    const savedVendors = localStorage.getItem('vendors');
+    fetchVendor();
+  }, [id]);
 
-    if (savedVendors) {
-      const vendorsList = JSON.parse(savedVendors);
-      // Try both string and number comparison to handle different ID types
-      const vendor = vendorsList.find(v => v.id === parseInt(id) || v.id === id || v.id.toString() === id);
+  const fetchVendor = async () => {
+    try {
+      setLoading(true);
+      const vendor = await getVendorById(id);
 
       if (vendor) {
         const newFormData = {
-          companyName: vendor.companyName && vendor.companyName !== 'null' ? vendor.companyName : '',
-          companyType: vendor.companyType && vendor.companyType !== 'null' ? vendor.companyType : '',
-          onboardingDate: vendor.onboardingDate && vendor.onboardingDate !== 'null' ? vendor.onboardingDate : '',
-          emails: vendor.emails && Array.isArray(vendor.emails) ? vendor.emails.map(email => email && email !== 'null' ? email : '') : [''],
-          phones: vendor.phones && Array.isArray(vendor.phones) ? vendor.phones.map(phone => phone && phone !== 'null' ? phone : '') : [''],
-          address: vendor.address && vendor.address !== 'null' ? vendor.address : '',
-          country: vendor.country && vendor.country !== 'null' ? vendor.country : '',
-          state: vendor.state && vendor.state !== 'null' ? vendor.state : '',
-          city: vendor.city && vendor.city !== 'null' ? vendor.city : '',
-          username: vendor.username && vendor.username !== 'null' ? vendor.username : '',
-          gstNumber: vendor.gstNumber && vendor.gstNumber !== 'null' ? vendor.gstNumber : '',
-          description: vendor.description && vendor.description !== 'null' ? vendor.description : '',
+          companyName: vendor.companyName || vendor.company_name || '',
+          companyType: vendor.companyType || vendor.company_type || '',
+          onboardingDate: vendor.onboardingDate || '',
+          emails: vendor.emails && Array.isArray(vendor.emails) ? vendor.emails : [vendor.email || ''],
+          phones: vendor.phones && Array.isArray(vendor.phones) ? vendor.phones : [vendor.phone || ''],
+          address: vendor.address || '',
+          country: vendor.country || '',
+          state: vendor.state || '',
+          city: vendor.city || '',
+          username: vendor.username || '',
+          gstNumber: vendor.gstNumber || '',
+          description: vendor.description || '',
           services: vendor.services && Array.isArray(vendor.services) ? vendor.services : [],
-          website: vendor.website && vendor.website !== 'null' ? vendor.website : '',
-          typeOfWork: vendor.typeOfWork && vendor.typeOfWork !== 'null' ? vendor.typeOfWork : '',
-          status: vendor.status && vendor.status !== 'null' ? vendor.status : 'Pending'
+          website: vendor.website || '',
+          typeOfWork: vendor.typeOfWork || vendor.type_of_work || vendor.specialization || '',
+          status: vendor.status || (vendor.isActive ? 'Active' : 'Pending')
         };
 
         setFormData(newFormData);
@@ -101,9 +102,12 @@ const VendorEdit = () => {
           });
         }
       }
+    } catch (error) {
+      console.error('Error fetching vendor:', error);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
-  }, [id]);
+  };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -286,27 +290,45 @@ const VendorEdit = () => {
     URL.revokeObjectURL(url);
   };
 
-  const handleSubmit = (e) => {
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState(null);
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Update vendor in localStorage
-    const savedVendors = localStorage.getItem('vendors');
-    if (savedVendors) {
-      const vendorsList = JSON.parse(savedVendors);
-      // Try both string and number comparison to handle different ID types
-      const vendorIndex = vendorsList.findIndex(v => v.id === parseInt(id) || v.id === id || v.id.toString() === id);
+    try {
+      setSaving(true);
+      setSaveError(null);
 
-      if (vendorIndex !== -1) {
-        vendorsList[vendorIndex] = {
-          ...vendorsList[vendorIndex],
-          ...formData,
-          files: uploadedFiles
-        };
+      console.log('Submitting form data:', formData);
 
-        localStorage.setItem('vendors', JSON.stringify(vendorsList));
-        console.log('Vendor updated successfully');
-        navigate(`/vendors/${id}`);
-      }
+      // Prepare update data
+      const updateData = {
+        ...formData,
+        files: uploadedFiles,
+        // Ensure emails and phones are arrays and filter out empty values
+        emails: formData.emails.filter(email => email.trim() !== ''),
+        phones: formData.phones.filter(phone => phone.trim() !== ''),
+        // Set primary email and phone from arrays
+        email: formData.emails.find(email => email.trim() !== '') || '',
+        phone: formData.phones.find(phone => phone.trim() !== '') || ''
+      };
+
+      console.log('Sending update data:', updateData);
+
+      const result = await updateVendor(id, updateData);
+      console.log('Update result:', result);
+
+      // Show success message
+      alert('Vendor updated successfully!');
+
+      // Navigate back to view page
+      navigate(`/vendors/${id}`);
+    } catch (error) {
+      console.error('Error updating vendor:', error);
+      setSaveError('Failed to update vendor. Please try again.');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -389,6 +411,13 @@ const VendorEdit = () => {
           </div>
         </div>
       </div>
+
+      {/* Error Message */}
+      {saveError && (
+        <div className="bg-red-50 border border-red-200 rounded-md p-4 mb-6">
+          <div className="text-red-800">{saveError}</div>
+        </div>
+      )}
 
       <form onSubmit={handleSubmit} className="space-y-8">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -872,9 +901,17 @@ const VendorEdit = () => {
           </button>
           <button
             type="submit"
-            className="btn-primary"
+            disabled={saving}
+            className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
           >
-            Update Vendor
+            {saving ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                Updating...
+              </>
+            ) : (
+              'Update Vendor'
+            )}
           </button>
         </div>
       </form>

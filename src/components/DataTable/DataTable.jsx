@@ -288,11 +288,27 @@ const DataTable = ({
                   className="hover:bg-gradient-to-r hover:from-primary-50 hover:to-blue-50 transition-all duration-200 group"
                   style={{ animationDelay: `${index * 50}ms` }}
                 >
-                  {getVisibleColumns().map(column => (
-                    <td key={column.key} className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 group-hover:text-gray-800 transition-colors duration-200">
-                      {column.render ? column.render(row[column.key], row) : row[column.key]}
-                    </td>
-                  ))}
+                  {getVisibleColumns().map(column => {
+                    const cellValue = row[column.key];
+                    let displayValue;
+
+                    if (column.render) {
+                      displayValue = column.render(cellValue, row);
+                    } else if (cellValue instanceof Date) {
+                      // Format Date objects to prevent React error
+                      displayValue = cellValue.toLocaleDateString();
+                    } else if (cellValue === null || cellValue === undefined) {
+                      displayValue = '';
+                    } else {
+                      displayValue = cellValue;
+                    }
+
+                    return (
+                      <td key={column.key} className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 group-hover:text-gray-800 transition-colors duration-200">
+                        {displayValue}
+                      </td>
+                    );
+                  })}
                 </tr>
               ))
             ) : (

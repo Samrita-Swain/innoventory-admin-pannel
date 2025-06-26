@@ -3,6 +3,56 @@ import { useNavigate } from 'react-router-dom';
 import { PlusIcon, EyeIcon, PencilIcon, TrashIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import DataTable from '../components/DataTable/DataTable';
 import FileUpload from '../components/FileUpload/FileUpload';
+import { getAllVendors, createVendor, deleteVendor, getVendorStats } from '../services/vendorService';
+import { getActiveTypeOfWork } from '../services/typeOfWorkService';
+
+// Demo data fallback
+const demoVendors = [
+  {
+    id: 'demo-1',
+    company_name: 'TechCorp Solutions',
+    company_type: 'Pvt. Company',
+    onboarding_date: '2024-01-15',
+    emails: ['contact@techcorp.com'],
+    phones: ['+91-9876543210'],
+    address: '123 Tech Street, Bangalore',
+    country: 'India',
+    state: 'Karnataka',
+    city: 'Bangalore',
+    username: 'techcorp_admin',
+    gst_number: 'GST29ABCDE1234F1Z5',
+    description: 'Leading technology solutions provider',
+    services: ['Software Development', 'IT Consulting'],
+    website: 'https://techcorp.com',
+    type_of_work: 'Technology Services',
+    status: 'Active',
+    files: {},
+    rating: 4.8,
+    total_orders: 25
+  },
+  {
+    id: 'demo-2',
+    company_name: 'Global Supplies Inc',
+    company_type: 'MSME',
+    onboarding_date: '2024-02-10',
+    emails: ['info@globalsupplies.com'],
+    phones: ['+91-8765432109'],
+    address: '456 Supply Avenue, Mumbai',
+    country: 'India',
+    state: 'Maharashtra',
+    city: 'Mumbai',
+    username: 'global_supplies',
+    gst_number: 'GST27FGHIJ5678K2L6',
+    description: 'Reliable office supplies vendor',
+    services: ['Office Supplies', 'Furniture'],
+    website: 'https://globalsupplies.com',
+    type_of_work: 'Office Supplies',
+    status: 'Active',
+    files: {},
+    rating: 4.5,
+    total_orders: 18
+  }
+];
 
 const Vendors = () => {
   const navigate = useNavigate();
@@ -34,46 +84,51 @@ const Vendors = () => {
   const [availableStates, setAvailableStates] = useState([]);
   const [availableCities, setAvailableCities] = useState([]);
   const [vendorsList, setVendorsList] = useState([]);
+  const [typeOfWorkOptions, setTypeOfWorkOptions] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  // Get active work types from TypeOfWork data
-  const getActiveWorkTypes = () => {
-    // This would typically come from a shared state or API
-    // For now, we'll use the same data structure as TypeOfWork page
-    const typeOfWorkData = [
-      {
-        id: 1,
-        name: 'Software Development',
-        description: 'Custom software development and programming services',
-        status: 'Active'
-      },
-      {
-        id: 2,
-        name: 'Digital Marketing',
-        description: 'SEO, social media marketing, and online advertising',
-        status: 'Active'
-      },
-      {
-        id: 3,
-        name: 'Graphic Design',
-        description: 'Logo design, branding, and visual identity services',
-        status: 'Active'
-      },
-      {
-        id: 4,
-        name: 'Content Writing',
-        description: 'Blog posts, articles, and copywriting services',
-        status: 'Inactive'
-      },
-      {
-        id: 5,
-        name: 'Data Analysis',
-        description: 'Business intelligence and data analytics services',
-        status: 'Active'
-      }
-    ];
 
-    return typeOfWorkData.filter(workType => workType.status === 'Active');
+
+  // Load vendors from database
+  const loadVendors = async () => {
+    try {
+      setLoading(true);
+      console.log('🔄 Loading vendors from database...');
+      console.log('🔗 Database connection test starting...');
+      const dbVendors = await getAllVendors();
+      console.log('✅ Database connection successful!');
+      console.log('✅ Vendors loaded:', dbVendors.length, 'records');
+
+      console.log('✅ Vendors loaded:', dbVendors.length, 'records');
+      setVendorsList(dbVendors);
+      setError(null);
+    } catch (err) {
+      console.error('❌ Database connection failed:', err);
+      console.error('❌ Error details:', err.message);
+      setError('Failed to load vendors from database: ' + err.message);
+      // Fallback to demo data
+      setVendorsList(demoVendors);
+    } finally {
+      setLoading(false);
+    }
   };
+
+  // Load type of work options
+  const loadTypeOfWork = async () => {
+    try {
+      const workTypes = await getActiveTypeOfWork();
+      setTypeOfWorkOptions(workTypes);
+    } catch (err) {
+      console.error('Error loading type of work:', err);
+    }
+  };
+
+  // Load data on component mount
+  useEffect(() => {
+    loadVendors();
+    loadTypeOfWork();
+  }, []);
 
   // Country, State, City data
   const countryStateCity = {
@@ -100,110 +155,12 @@ const Vendors = () => {
     }
   };
 
-  // Load vendors from localStorage or use sample data
-  const loadVendors = () => {
-    const savedVendors = localStorage.getItem('vendors');
-    if (savedVendors) {
-      return JSON.parse(savedVendors);
-    }
-    // Default sample vendors
-    return [
-      {
-        id: 1,
-        companyName: 'ABC Supplies',
-        companyType: 'Pvt. Company',
-        onboardingDate: '2024-01-15',
-        emails: ['contact@abcsupplies.com'],
-        phones: ['+1-234-567-8900'],
-        address: '456 Supplier Ave, Chicago, IL 60601',
-        country: 'United States',
-        state: 'California',
-        city: 'Los Angeles',
-        username: 'abc_supplies',
-        gstNumber: 'GST123456789',
-        description: 'Reliable office supplies vendor',
-        services: ['Office Supplies', 'Furniture'],
-        website: 'https://abcsupplies.com',
-        typeOfWork: 'Software Development',
-        status: 'Active',
-        totalOrders: 45,
-        files: {
-          gstFile: null,
-          ndaFile: null,
-          agreementFile: null,
-          companyLogos: []
-        }
-      },
-      {
-        id: 2,
-        companyName: 'XYZ Manufacturing',
-        companyType: 'MSME',
-        onboardingDate: '2024-02-20',
-        emails: ['info@xyzmanufacturing.com'],
-        phones: ['+1-234-567-8901'],
-        address: '789 Industrial Park, Mumbai, Maharashtra',
-        country: 'India',
-        state: 'Maharashtra',
-        city: 'Mumbai',
-        username: 'xyz_manufacturing',
-        gstNumber: 'GST987654321',
-        description: 'Manufacturing solutions provider',
-        services: ['Manufacturing', 'Technology Equipment'],
-        website: 'https://xyzmanufacturing.com',
-        typeOfWork: 'Digital Marketing',
-        status: 'Active',
-        totalOrders: 32,
-        files: {
-          gstFile: null,
-          ndaFile: null,
-          agreementFile: null,
-          companyLogos: []
-        }
-      },
-      {
-        id: 3,
-        companyName: 'Tech Solutions Ltd',
-        companyType: 'Firm',
-        onboardingDate: '2024-03-10',
-        emails: ['hello@techsolutions.com'],
-        phones: ['+1-234-567-8902'],
-        address: '123 Tech Street, Bangalore, Karnataka',
-        country: 'India',
-        state: 'Karnataka',
-        city: 'Bangalore',
-        username: 'tech_solutions',
-        gstNumber: '',
-        description: 'Technology service provider',
-        services: ['Technology Equipment', 'Consulting'],
-        website: 'https://techsolutions.com',
-        typeOfWork: 'Graphic Design',
-        status: 'Pending',
-        totalOrders: 0,
-        files: {
-          gstFile: null,
-          ndaFile: null,
-          agreementFile: null,
-          companyLogos: []
-        }
-      }
-    ];
-  };
 
-  // Initialize vendors list
-  useEffect(() => {
-    const vendors = loadVendors();
-    setVendorsList(vendors);
 
-    // Save to localStorage if not already saved
-    const savedVendors = localStorage.getItem('vendors');
-    if (!savedVendors) {
-      localStorage.setItem('vendors', JSON.stringify(vendors));
-    }
-  }, []);
 
   const columns = [
     {
-      key: 'companyName',
+      key: 'company_name',
       label: 'Vendor Name',
       sortable: true,
       filterable: true
@@ -229,13 +186,13 @@ const Vendors = () => {
       filterable: true
     },
     {
-      key: 'companyType',
+      key: 'company_type',
       label: 'Business Type',
       sortable: true,
       filterable: true
     },
     {
-      key: 'typeOfWork',
+      key: 'type_of_work',
       label: 'Type of Work',
       sortable: true,
       filterable: true
@@ -289,6 +246,7 @@ const Vendors = () => {
             <PencilIcon className="h-4 w-4" />
           </button>
           <button
+            onClick={() => handleDeleteVendor(row.id)}
             className="text-red-600 hover:text-red-900 p-1 hover:bg-red-50 rounded"
             title="Delete Vendor"
           >
@@ -464,62 +422,76 @@ const Vendors = () => {
     URL.revokeObjectURL(url);
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // Create new vendor object
-    const newVendor = {
-      id: Date.now(), // Simple ID generation
-      ...formData,
-      status: 'Pending', // Default status for new vendors
-      totalOrders: 0,
-      files: uploadedFiles
-    };
+    try {
+      setLoading(true);
 
-    // Add to vendors list
-    const updatedVendors = [...vendorsList, newVendor];
-    setVendorsList(updatedVendors);
+      // Create new vendor object
+      const vendorData = {
+        ...formData,
+        files: uploadedFiles
+      };
 
-    // Save to localStorage
-    localStorage.setItem('vendors', JSON.stringify(updatedVendors));
+      // Save to database
+      await createVendor(vendorData);
 
-    console.log('New Vendor Added:', newVendor);
-    setShowAddForm(false);
+      // Reload vendors list
+      await loadVendors();
 
-    // Reset form
-    setFormData({
-      companyName: '',
-      companyType: '',
-      onboardingDate: '',
-      emails: [''],
-      phones: [''],
-      address: '',
-      country: '',
-      state: '',
-      city: '',
-      username: '',
-      gstNumber: '',
-      description: '',
-      services: [],
-      website: '',
-      typeOfWork: '',
-      status: 'Pending'
-    });
-    setUploadedFiles({
-      gstFile: null,
-      ndaFile: null,
-      agreementFile: null,
-      companyLogos: []
-    });
-    setAvailableStates([]);
-    setAvailableCities([]);
+      // Reset form
+      setFormData({
+        companyName: '',
+        companyType: '',
+        onboardingDate: '',
+        emails: [''],
+        phones: [''],
+        address: '',
+        country: '',
+        state: '',
+        city: '',
+        username: '',
+        gstNumber: '',
+        description: '',
+        services: [],
+        website: '',
+        typeOfWork: '',
+        status: 'Pending'
+      });
+      setUploadedFiles({
+        gstFile: null,
+        ndaFile: null,
+        agreementFile: null,
+        companyLogos: []
+      });
+      setAvailableStates([]);
+      setAvailableCities([]);
+      setShowAddForm(false);
+
+      // Show success message
+      alert('Vendor added successfully!');
+    } catch (err) {
+      console.error('Error creating vendor:', err);
+      alert('Failed to create vendor. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleDeleteVendor = (vendorId) => {
+  const handleDeleteVendor = async (vendorId) => {
     if (window.confirm('Are you sure you want to delete this vendor?')) {
-      const updatedVendors = vendorsList.filter(vendor => vendor.id !== vendorId);
-      setVendorsList(updatedVendors);
-      localStorage.setItem('vendors', JSON.stringify(updatedVendors));
+      try {
+        setLoading(true);
+        await deleteVendor(vendorId);
+        await loadVendors();
+        alert('Vendor deleted successfully!');
+      } catch (err) {
+        console.error('Error deleting vendor:', err);
+        alert('Failed to delete vendor. Please try again.');
+      } finally {
+        setLoading(false);
+      }
     }
   };
 
@@ -665,7 +637,7 @@ const Vendors = () => {
                         className="input-field"
                       >
                         <option value="">Select type of work</option>
-                        {getActiveWorkTypes().map(workType => (
+                        {typeOfWorkOptions.map(workType => (
                           <option key={workType.id} value={workType.name}>
                             {workType.name}
                           </option>

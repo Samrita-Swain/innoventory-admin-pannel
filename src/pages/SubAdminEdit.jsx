@@ -25,69 +25,7 @@ const SubAdminEdit = () => {
     panCard: []
   });
 
-  // Sample data - in real app, this would come from API
-  const sampleSubAdmins = [
-    {
-      id: 1,
-      subAdminOnboardingDate: '2024-01-15',
-      name: 'Sarah Johnson',
-      email: 'sarah.johnson@innoventory.com',
-      address: '123 Business Street, Suite 100, New York, NY 10001',
-      country: 'India',
-      state: 'Maharashtra',
-      city: 'Mumbai',
-      username: 'sarah.johnson',
-      panNumber: 'ABCDE1234F',
-      termOfWork: 'Full-time',
-      status: 'Active',
-      uploadedFiles: {
-        tdsFile: [{ name: 'sarah_tds_2024.pdf', url: '/uploads/sarah_tds.pdf' }],
-        ndaFile: [{ name: 'sarah_nda.pdf', url: '/uploads/sarah_nda.pdf' }],
-        employmentAgreement: [{ name: 'sarah_employment.pdf', url: '/uploads/sarah_employment.pdf' }],
-        panCard: [{ name: 'sarah_pan.pdf', url: '/uploads/sarah_pan.pdf' }]
-      }
-    },
-    {
-      id: 2,
-      subAdminOnboardingDate: '2024-02-20',
-      name: 'Mike Chen',
-      email: 'mike.chen@innoventory.com',
-      address: '456 Tech Park, Building B, Bangalore, Karnataka 560001',
-      country: 'India',
-      state: 'Karnataka',
-      city: 'Bangalore',
-      username: 'mike.chen',
-      panNumber: 'FGHIJ5678K',
-      termOfWork: 'Contract',
-      status: 'Active',
-      uploadedFiles: {
-        tdsFile: [{ name: 'mike_tds_2024.pdf', url: '/uploads/mike_tds.pdf' }],
-        ndaFile: [{ name: 'mike_nda.pdf', url: '/uploads/mike_nda.pdf' }],
-        employmentAgreement: [{ name: 'mike_contract.pdf', url: '/uploads/mike_contract.pdf' }],
-        panCard: [{ name: 'mike_pan.pdf', url: '/uploads/mike_pan.pdf' }]
-      }
-    },
-    {
-      id: 3,
-      subAdminOnboardingDate: '2024-03-10',
-      name: 'Emily Rodriguez',
-      email: 'emily.rodriguez@innoventory.com',
-      address: '789 Support Center, Floor 3, Delhi, Delhi 110001',
-      country: 'India',
-      state: 'Delhi',
-      city: 'New Delhi',
-      username: 'emily.rodriguez',
-      panNumber: 'LMNOP9012Q',
-      termOfWork: 'Part-time',
-      status: 'Inactive',
-      uploadedFiles: {
-        tdsFile: [],
-        ndaFile: [{ name: 'emily_nda.pdf', url: '/uploads/emily_nda.pdf' }],
-        employmentAgreement: [{ name: 'emily_employment.pdf', url: '/uploads/emily_employment.pdf' }],
-        panCard: [{ name: 'emily_pan.pdf', url: '/uploads/emily_pan.pdf' }]
-      }
-    }
-  ];
+  // Sub-admin data will be loaded from database service
 
   // Country, State, City data
   const locationData = {
@@ -101,29 +39,9 @@ const SubAdminEdit = () => {
   };
 
   useEffect(() => {
-    // Find sub-admin by ID and populate form
-    const foundSubAdmin = sampleSubAdmins.find(admin => admin.id === parseInt(id));
-    if (foundSubAdmin) {
-      setFormData({
-        subAdminOnboardingDate: foundSubAdmin.subAdminOnboardingDate || '',
-        name: foundSubAdmin.name || '',
-        email: foundSubAdmin.email || '',
-        address: foundSubAdmin.address || '',
-        country: foundSubAdmin.country || '',
-        state: foundSubAdmin.state || '',
-        city: foundSubAdmin.city || '',
-        username: foundSubAdmin.username || '',
-        panNumber: foundSubAdmin.panNumber || '',
-        termOfWork: foundSubAdmin.termOfWork || '',
-        status: foundSubAdmin.status || 'Active'
-      });
-      setUploadedFiles(foundSubAdmin.uploadedFiles || {
-        tdsFile: [],
-        ndaFile: [],
-        employmentAgreement: [],
-        panCard: []
-      });
-    }
+    // Load sub-admin data from database service
+    // This will be implemented when database service is integrated
+    console.log('Loading sub-admin data for ID:', id);
   }, [id]);
 
   const handleInputChange = (e) => {

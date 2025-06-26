@@ -1,12 +1,14 @@
 import { useState, useRef } from 'react';
-import { 
-  CloudArrowUpIcon, 
-  DocumentIcon, 
-  PhotoIcon, 
+import {
+  CloudArrowUpIcon,
+  DocumentIcon,
+  PhotoIcon,
   XMarkIcon,
   CheckCircleIcon,
   ExclamationTriangleIcon
 } from '@heroicons/react/24/outline';
+// import ErrorBoundary from '../ErrorBoundary/ErrorBoundary';
+// import { validateImageFile, formatFileSize } from '../../utils/imageUtils';
 
 const FileUpload = ({ 
   onFilesChange, 
@@ -33,10 +35,15 @@ const FileUpload = ({
   const maxFileSizeBytes = maxFileSize * 1024 * 1024;
 
   const getFileIcon = (fileType) => {
-    if (fileType.startsWith('image/')) {
-      return <PhotoIcon className="h-8 w-8 text-blue-500" />;
+    try {
+      if (fileType && fileType.startsWith('image/')) {
+        return <PhotoIcon className="h-8 w-8 text-blue-500" />;
+      }
+      return <DocumentIcon className="h-8 w-8 text-gray-500" />;
+    } catch (error) {
+      console.warn('Error determining file icon:', error);
+      return <DocumentIcon className="h-8 w-8 text-gray-500" />;
     }
-    return <DocumentIcon className="h-8 w-8 text-gray-500" />;
   };
 
   const formatFileSize = (bytes) => {

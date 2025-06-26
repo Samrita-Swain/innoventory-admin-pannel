@@ -14,6 +14,7 @@ import {
 } from '@heroicons/react/24/outline';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
+import { getVendorById, updateVendor } from '../services/vendorService';
 
 const VendorView = () => {
   const { id } = useParams();
@@ -21,127 +22,81 @@ const VendorView = () => {
   const [vendor, setVendor] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Sample vendor data - in real app, this would come from API
+  // Fetch vendor data from database
   useEffect(() => {
-    // Load vendor data from localStorage or use sample data
-    setTimeout(() => {
-      const savedVendors = localStorage.getItem('vendors');
-      let vendorsList = [];
+    fetchVendor();
+  }, [id]);
 
-      if (savedVendors) {
-        vendorsList = JSON.parse(savedVendors);
-      }
+  const fetchVendor = async () => {
+    try {
+      setLoading(true);
+      const vendorData = await getVendorById(id);
 
-      const foundVendor = vendorsList.find(v => v.id === parseInt(id));
-
-      let sampleVendor;
-
-      if (foundVendor) {
-        // Convert new data structure to display format
-        sampleVendor = {
-          ...foundVendor,
-          name: foundVendor.companyName || foundVendor.name || 'Unknown Vendor',
-          email: foundVendor.emails?.[0] || foundVendor.email || 'N/A',
-          phone: foundVendor.phones?.[0] || foundVendor.phone || 'N/A',
-          contactPerson: foundVendor.username || foundVendor.contactPerson || 'N/A',
-          businessType: foundVendor.companyType || foundVendor.businessType || 'N/A',
-          joinDate: foundVendor.onboardingDate || foundVendor.joinDate || 'N/A',
-          taxId: foundVendor.gstNumber || foundVendor.taxId || 'N/A',
-          rating: foundVendor.rating || 4.5,
-          website: foundVendor.website || 'N/A',
-          totalOrders: foundVendor.totalOrders || 0,
-          // Additional fields from form
-          typeOfWork: foundVendor.typeOfWork || 'N/A',
-          country: foundVendor.country || 'N/A',
-          state: foundVendor.state || 'N/A',
-          city: foundVendor.city || 'N/A',
-          allEmails: foundVendor.emails || [],
-          allPhones: foundVendor.phones || [],
-          companyLogos: foundVendor.files?.companyLogos || [],
-          files: foundVendor.files || {},
+      if (vendorData) {
+        // Transform database data to display format
+        const transformedVendor = {
+          ...vendorData,
+          name: vendorData.company_name || vendorData.companyName || 'Unknown Vendor',
+          email: vendorData.emails?.[0] || vendorData.email || 'N/A',
+          phone: vendorData.phones?.[0] || vendorData.phone || 'N/A',
+          contactPerson: vendorData.username || vendorData.contactPerson || 'N/A',
+          businessType: vendorData.company_type || vendorData.companyType || 'N/A',
+          joinDate: vendorData.onboardingDate || vendorData.joinDate || 'N/A',
+          taxId: vendorData.gstNumber || vendorData.taxId || 'N/A',
+          rating: vendorData.rating || 4.5,
+          website: vendorData.website || 'N/A',
+          totalOrders: vendorData.totalOrders || 0,
+          typeOfWork: vendorData.type_of_work || vendorData.typeOfWork || vendorData.specialization || 'N/A',
+          country: vendorData.country || 'N/A',
+          state: vendorData.state || 'N/A',
+          city: vendorData.city || 'N/A',
+          allEmails: vendorData.emails || [],
+          allPhones: vendorData.phones || [],
+          companyLogos: vendorData.files?.companyLogos || [],
+          files: vendorData.files || {},
+          status: vendorData.status || (vendorData.isActive ? 'Active' : 'Inactive'),
+          address: vendorData.address || 'N/A',
           // Default values for missing fields
-          services: foundVendor.services || ['General Services'],
-          performanceMetrics: foundVendor.performanceMetrics || {
+          services: vendorData.services || [vendorData.type_of_work || 'General Services'],
+          performanceMetrics: vendorData.performanceMetrics || {
             onTimeDelivery: 95,
-            qualityRating: 4.5,
+            qualityRating: vendorData.rating || 4.5,
             responseTime: '2 hours',
             totalRevenue: '₹0'
           },
-          recentOrders: foundVendor.recentOrders || [],
-          documents: foundVendor.documents || [],
-          contactHistory: foundVendor.contactHistory || []
+          recentOrders: vendorData.recentOrders || [],
+          documents: vendorData.documents || [],
+          contactHistory: vendorData.contactHistory || []
         };
+        setVendor(transformedVendor);
       } else {
-        // Fallback sample vendor if not found
-        sampleVendor = {
-          id: id || '1',
-          name: 'ABC Supplies',
-          email: 'contact@abcsupplies.com',
-          phone: '+1-555-987-6543',
-          status: 'Active',
-          joinDate: '2024-01-15',
-          totalOrders: 15,
-          rating: 4.8,
-          contactPerson: 'Sarah Wilson',
-          businessType: 'Office Supplies',
-          address: '456 Supplier Ave, Chicago, IL 60601',
-          website: 'https://abcsupplies.com',
-          taxId: 'TAX-987654321',
-          description: 'Reliable office supplies vendor with over 20 years of experience in providing quality products and excellent customer service.',
-          services: ['Office Supplies', 'Furniture', 'Technology Equipment', 'Maintenance Services'],
-          recentOrders: [
-            { id: 'ORD-001', date: '2024-06-20', amount: '₹2,45,000', status: 'Completed', client: 'Acme Corporation' },
-            { id: 'ORD-018', date: '2024-06-18', amount: '₹1,20,000', status: 'Processing', client: 'Global Tech Inc' },
-            { id: 'ORD-015', date: '2024-06-15', amount: '₹89,000', status: 'Completed', client: 'StartUp Solutions' }
-          ],
-          files: {
-            gstFile: { name: 'GST_Certificate.pdf', size: '245 KB', uploadDate: '2024-01-15' },
-            ndaFile: { name: 'NDA_Signed.pdf', size: '156 KB', uploadDate: '2024-01-15' },
-            agreementFile: { name: 'Vendor_Agreement.pdf', size: '345 KB', uploadDate: '2024-01-15' }
-          },
-          documents: [
-            { name: 'Business License.pdf', size: '256 KB', uploadDate: '2024-01-15' },
-            { name: 'Insurance Certificate.pdf', size: '198 KB', uploadDate: '2024-01-20' },
-            { name: 'Product Catalog.pdf', size: '2.1 MB', uploadDate: '2024-02-01' }
-          ],
-          performanceMetrics: {
-            onTimeDelivery: 95,
-            qualityRating: 4.8,
-            responseTime: '2 hours',
-            totalRevenue: '₹45,89,000'
-          },
-          contactHistory: [
-            { date: '2024-06-20', type: 'Email', subject: 'Order delivery confirmation', status: 'Sent' },
-            { date: '2024-06-18', type: 'Phone', subject: 'Product availability inquiry', status: 'Completed' },
-            { date: '2024-06-15', type: 'Meeting', subject: 'Quarterly vendor review', status: 'Completed' }
-          ]
-        };
+        setVendor(null);
       }
-      setVendor(sampleVendor);
+    } catch (error) {
+      console.error('Error fetching vendor:', error);
+      setVendor(null);
+    } finally {
       setLoading(false);
-    }, 500);
-  }, [id]);
+    }
+  };
 
-  const handleRatingChange = (newRating) => {
-    // Update the vendor rating in state
-    setVendor(prev => ({
-      ...prev,
-      rating: newRating
-    }));
+  const handleRatingChange = async (newRating) => {
+    try {
+      // Update the vendor rating in state
+      setVendor(prev => ({
+        ...prev,
+        rating: newRating
+      }));
 
-    // Update the rating in localStorage
-    const savedVendors = localStorage.getItem('vendors');
-    if (savedVendors) {
-      const vendorsList = JSON.parse(savedVendors);
-      const vendorIndex = vendorsList.findIndex(v => v.id === parseInt(id) || v.id === id || v.id.toString() === id);
-
-      if (vendorIndex !== -1) {
-        vendorsList[vendorIndex] = {
-          ...vendorsList[vendorIndex],
-          rating: newRating
-        };
-        localStorage.setItem('vendors', JSON.stringify(vendorsList));
-      }
+      // Update the rating in database
+      await updateVendor(id, { rating: newRating });
+    } catch (error) {
+      console.error('Error updating vendor rating:', error);
+      // Revert the state change if update failed
+      setVendor(prev => ({
+        ...prev,
+        rating: vendor.rating
+      }));
     }
   };
 

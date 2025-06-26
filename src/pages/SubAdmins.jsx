@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PlusIcon, KeyIcon, ShieldCheckIcon, EyeIcon, PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
 import DataTable from '../components/DataTable/DataTable';
@@ -29,10 +29,13 @@ const SubAdmins = () => {
     panCard: []
   });
 
-  // Sample sub-admin data
-  const subAdmins = [
+  // Demo data for display (not saved to database)
+  const [subAdmins, setSubAdmins] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const demoSubAdmins = [
     {
-      id: 1,
+      id: 'demo-admin-1',
       subAdminOnboardingDate: '2024-01-15',
       name: 'Sarah Johnson',
       email: 'sarah.johnson@innoventory.com',
@@ -56,7 +59,7 @@ const SubAdmins = () => {
       }
     },
     {
-      id: 2,
+      id: 'demo-admin-2',
       subAdminOnboardingDate: '2024-02-20',
       name: 'Mike Chen',
       email: 'mike.chen@innoventory.com',
@@ -80,7 +83,7 @@ const SubAdmins = () => {
       }
     },
     {
-      id: 3,
+      id: 'demo-admin-3',
       subAdminOnboardingDate: '2024-03-10',
       name: 'Emily Rodriguez',
       email: 'emily.rodriguez@innoventory.com',
@@ -104,6 +107,29 @@ const SubAdmins = () => {
       }
     },
   ];
+
+  // Load sub-admins from database
+  useEffect(() => {
+    const loadSubAdmins = async () => {
+      try {
+        setLoading(true);
+        console.log('🔄 Loading sub-admins from database...');
+        // Import and use database service
+        const { getAllSubAdmins } = await import('../services/database');
+        const dbSubAdmins = await getAllSubAdmins();
+        console.log('✅ Sub-admins loaded:', dbSubAdmins);
+        setSubAdmins(dbSubAdmins);
+      } catch (err) {
+        console.error('❌ Error loading sub-admins:', err);
+        // Fallback to demo data if database fails
+        setSubAdmins(demoSubAdmins);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadSubAdmins();
+  }, []);
 
   const availablePermissions = [
     'Dashboard',

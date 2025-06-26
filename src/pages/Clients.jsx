@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PlusIcon, EyeIcon, PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
 import DataTable from '../components/DataTable/DataTable';
@@ -29,6 +29,7 @@ const countryStateCity = {
 const Clients = () => {
   const navigate = useNavigate();
   const [showAddForm, setShowAddForm] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
   const [formData, setFormData] = useState({
     onboardingDate: '',
     companyType: '',
@@ -62,82 +63,124 @@ const Clients = () => {
   const [availableStates, setAvailableStates] = useState([]);
   const [availableCities, setAvailableCities] = useState([]);
 
-  // Sample client data
-  const clients = [
+  // Demo data for display (not saved to database)
+  const [clients, setClients] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const demoClients = [
     {
-      id: 1,
-      onboardingDate: '2024-01-10',
-      companyType: 'Startup',
-      companyName: 'Acme Corporation',
+      id: 'demo-client-1',
+      onboarding_date: '2024-01-10',
+      company_type: 'Startup',
+      company_name: 'Acme Corporation',
       emails: ['contact@acme.com', 'support@acme.com'],
       phones: ['+1-555-123-4567', '+1-555-123-4568'],
       address: '123 Business St, New York, NY 10001',
       country: 'United States',
       state: 'New York',
       city: 'New York City',
-      username: 'acmecorp',
-      gstNumber: 'GST123456789',
-      dpiitRegistered: 'yes',
-      validTill: '2025-12-31',
-      website: 'https://acme.com',
+      dpiit_registered: true,
+      dpiit_number: 'DPIIT2024001',
       status: 'Active',
-      joinDate: '2024-01-10',
-      totalOrders: 28,
-      totalSpent: '₹45,23,000'
+      created_at: '2024-01-10'
     },
     {
-      id: 2,
-      onboardingDate: '2024-02-15',
-      companyType: 'MSME',
-      companyName: 'Global Tech Inc',
+      id: 'demo-client-2',
+      onboarding_date: '2024-02-15',
+      company_type: 'MSME',
+      company_name: 'Global Tech Inc',
       emails: ['info@globaltech.com'],
       phones: ['+1-555-234-5678'],
       address: '456 Industrial Ave, Chicago, IL 60601',
       country: 'United States',
       state: 'Texas',
       city: 'Houston',
-      username: 'globaltech',
-      gstNumber: 'GST987654321',
-      dpiitRegistered: 'no',
-      validTill: '',
-      website: 'https://globaltech.com',
+      dpiit_registered: false,
+      dpiit_number: '',
       status: 'Active',
-      joinDate: '2024-02-15',
-      totalOrders: 15,
-      totalSpent: '₹23,45,000'
+      created_at: '2024-02-15'
     },
     {
-      id: 3,
-      onboardingDate: '2024-03-01',
-      companyType: 'Small Entity',
-      companyName: 'StartUp Solutions',
+      id: 'demo-client-3',
+      onboarding_date: '2024-03-01',
+      company_type: 'Small Entity',
+      company_name: 'StartUp Solutions',
       emails: ['hello@startupsolutions.com'],
       phones: ['+1-555-345-6789'],
       address: '789 Startup Blvd, San Francisco, CA 94102',
       country: 'United States',
       state: 'California',
       city: 'Los Angeles',
-      username: 'startupsol',
-      gstNumber: '',
-      dpiitRegistered: 'yes',
-      validTill: '2024-12-31',
-      website: 'https://startupsolutions.com',
+      dpiit_registered: true,
+      dpiit_number: 'DPIIT2024003',
       status: 'Inactive',
-      joinDate: '2024-03-01',
-      totalOrders: 5,
-      totalSpent: '₹8,90,000'
+      created_at: '2024-03-01'
     },
   ];
 
+  // Load clients from database
+  useEffect(() => {
+    const loadClients = async () => {
+      try {
+        setLoading(true);
+        console.log('🔄 Loading clients from database...');
+        // Import and use client service
+        const { getAllClients } = await import('../services/clientService');
+        const dbClients = await getAllClients();
+        console.log('✅ Clients loaded:', dbClients);
+        console.log('📊 First client structure:', dbClients[0]);
+
+        console.log('✅ Clients loaded:', dbClients);
+        console.log('📊 First client structure:', dbClients[0]);
+        setClients(dbClients);
+      } catch (err) {
+        console.error('❌ Error loading clients:', err);
+        // Fallback to demo data if database fails
+        setClients(demoClients);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadClients();
+  }, []);
+
+  // Handle client deletion
+  const handleDeleteClient = async (clientId) => {
+    if (!window.confirm('Are you sure you want to delete this client? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      setDeleteLoading(true);
+      console.log('🗑️ Deleting client:', clientId);
+
+      // Import and use database service
+      const { deleteClient } = await import('../services/clientService');
+      await deleteClient(clientId);
+
+      // Remove client from local state
+      setClients(prevClients => prevClients.filter(client => client.id !== clientId));
+
+      console.log('✅ Client deleted successfully');
+      alert('Client deleted successfully!');
+    } catch (error) {
+      console.error('❌ Error deleting client:', error);
+      alert('Failed to delete client. Please try again.');
+    } finally {
+      setDeleteLoading(false);
+    }
+  };
+
   const columns = [
     {
-      key: 'companyName',
+      key: 'company_name',
       label: 'Company Name',
       sortable: true,
       filterable: true
     },
     {
-      key: 'companyType',
+      key: 'company_type',
       label: 'Company Type',
       sortable: true,
       filterable: true
@@ -171,7 +214,7 @@ const Clients = () => {
       )
     },
     {
-      key: 'onboardingDate',
+      key: 'onboarding_date',
       label: 'Onboarding Date',
       sortable: true,
       filterable: true
@@ -192,26 +235,8 @@ const Clients = () => {
       )
     },
     {
-      key: 'joinDate',
+      key: 'created_at',
       label: 'Join Date',
-      sortable: true,
-      filterable: false
-    },
-    {
-      key: 'totalOrders',
-      label: 'Total Orders',
-      sortable: true,
-      filterable: false
-    },
-    {
-      key: 'totalSpent',
-      label: 'Total Spent',
-      sortable: true,
-      filterable: false
-    },
-    {
-      key: 'creditLimit',
-      label: 'Credit Limit',
       sortable: true,
       filterable: false
     },
@@ -237,7 +262,9 @@ const Clients = () => {
             <PencilIcon className="h-4 w-4" />
           </button>
           <button
-            className="text-red-600 hover:text-red-900 p-1 hover:bg-red-50 rounded"
+            onClick={() => handleDeleteClient(row.id)}
+            disabled={deleteLoading}
+            className="text-red-600 hover:text-red-900 p-1 hover:bg-red-50 rounded disabled:opacity-50"
             title="Delete Client"
           >
             <TrashIcon className="h-4 w-4" />

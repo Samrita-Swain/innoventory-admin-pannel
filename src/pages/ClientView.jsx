@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { 
-  ArrowLeftIcon, 
-  PencilIcon, 
+import {
+  ArrowLeftIcon,
+  PencilIcon,
   PrinterIcon,
   DocumentArrowDownIcon,
   BuildingOfficeIcon,
@@ -12,6 +12,9 @@ import {
   UserIcon,
   CreditCardIcon
 } from '@heroicons/react/24/outline';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
+import * as XLSX from 'xlsx';
 
 const ClientView = () => {
   const { id } = useParams();
@@ -19,61 +22,153 @@ const ClientView = () => {
   const [client, setClient] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Sample client data - in real app, this would come from API
+  // Load client data from database service
   useEffect(() => {
-    // Simulate API call
-    setTimeout(() => {
-      const sampleClient = {
-        id: id || '1',
-        onboardingDate: '2024-01-10',
-        companyType: 'Startup',
-        companyName: 'Acme Corporation',
-        emails: ['contact@acme.com', 'support@acme.com'],
-        phones: ['+1-555-123-4567', '+1-555-123-4568'],
-        address: '123 Business St, New York, NY 10001',
-        country: 'United States',
-        state: 'New York',
-        city: 'New York City',
-        username: 'acmecorp',
-        gstNumber: 'GST123456789',
-        dpiitRegistered: 'yes',
-        validTill: '2025-12-31',
-        website: 'https://acme.com',
-        status: 'Active',
-        joinDate: '2024-01-10',
-        totalOrders: 28,
-        totalSpent: '₹45,23,000',
-        description: 'Leading technology company specializing in innovative software solutions and digital transformation services.',
-        uploadedFiles: {
-          dpiitCertificate: 'dpiit_certificate_acme.pdf',
-          tdsFile: 'tds_file_acme.pdf',
-          gstFile: 'gst_certificate_acme.pdf',
-          ndaFile: 'nda_agreement_acme.pdf',
-          agreementFile: 'service_agreement_acme.pdf',
-          quotationFile: 'quotation_2024_acme.pdf',
-          panCardFile: 'pan_card_acme.pdf',
-          udhyamRegistrationFile: 'udhyam_registration_acme.pdf'
-        },
-        recentOrders: [
-          { id: 'ORD-001', date: '2024-06-20', amount: '₹2,45,000', status: 'Completed' },
-          { id: 'ORD-015', date: '2024-06-15', amount: '₹1,89,000', status: 'Processing' },
-          { id: 'ORD-012', date: '2024-06-10', amount: '₹3,20,000', status: 'Completed' }
-        ],
-        documents: [
-          { name: 'Service Agreement.pdf', size: '245 KB', uploadDate: '2024-01-10' },
-          { name: 'Business License.pdf', size: '156 KB', uploadDate: '2024-01-10' },
-          { name: 'Insurance Certificate.pdf', size: '198 KB', uploadDate: '2024-01-15' }
-        ],
-        contactHistory: [
-          { date: '2024-06-20', type: 'Email', subject: 'Order confirmation for ORD-001', status: 'Sent' },
-          { date: '2024-06-15', type: 'Phone', subject: 'Follow-up on pending order', status: 'Completed' },
-          { date: '2024-06-10', type: 'Meeting', subject: 'Quarterly business review', status: 'Completed' }
-        ]
-      };
-      setClient(sampleClient);
-      setLoading(false);
-    }, 500);
-  }, [id]);
+    const loadClient = async () => {
+      try {
+        setLoading(true);
+        console.log('🔄 Loading client data for ID:', id);
+
+        // Import and use database service
+        const { getClientById } = await import('../services/clientService');
+        const clientData = await getClientById(id);
+
+        if (clientData) {
+          console.log('✅ Client data loaded:', clientData);
+          setClient(clientData);
+        } else {
+          console.log('❌ Client not found');
+          alert('Client not found');
+          navigate('/clients');
+        }
+      } catch (error) {
+        console.error('❌ Error loading client:', error);
+        alert('Failed to load client data');
+        navigate('/clients');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadClient();
+  }, [id, navigate]);
+
+  // Print functionality
+  const handlePrint = () => {
+    const printContent = document.getElementById('client-print-content');
+    const originalContent = document.body.innerHTML;
+
+    // Create print-specific styles
+    const printStyles = `
+      <style>
+        @media print {
+          body { margin: 0; padding: 20px; font-family: Arial, sans-serif; }
+          .no-print { display: none !important; }
+          .print-only { display: block !important; }
+          .card { border: 1px solid #ddd; margin-bottom: 20px; padding: 15px; }
+          .grid { display: block; }
+          .grid > div { margin-bottom: 15px; }
+          h1 { font-size: 24px; margin-bottom: 10px; }
+          h2 { font-size: 18px; margin-bottom: 8px; }
+          .text-sm { font-size: 12px; }
+          .text-gray-600 { color: #666; }
+          .bg-green-100 { background-color: #f0f9ff; }
+          .text-green-800 { color: #166534; }
+        }
+      </style>
+    `;
+
+    document.body.innerHTML = printStyles + printContent.innerHTML;
+    window.print();
+    document.body.innerHTML = originalContent;
+    window.location.reload(); // Reload to restore functionality
+  };
+
+  // Export to PDF functionality
+  const handleExportPDF = async () => {
+    try {
+      const element = document.getElementById('client-print-content');
+      const canvas = await html2canvas(element, {
+        scale: 2,
+        useCORS: true,
+        allowTaint: true
+      });
+
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const imgWidth = 210;
+      const pageHeight = 295;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      let heightLeft = imgHeight;
+      let position = 0;
+
+      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
+
+      while (heightLeft >= 0) {
+        position = heightLeft - imgHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+      }
+
+      pdf.save(`client-${client.companyName || 'details'}.pdf`);
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      alert('Failed to generate PDF. Please try again.');
+    }
+  };
+
+  // Export to Excel functionality
+  const handleExportExcel = () => {
+    try {
+      const workbook = XLSX.utils.book_new();
+
+      // Client basic information
+      const clientData = [
+        ['Client Information', ''],
+        ['Company Name', client.companyName || 'Not specified'],
+        ['Company Type', client.companyType || 'Not specified'],
+        ['Email', client.emails?.[0] || 'Not specified'],
+        ['Phone', client.phones?.[0] || 'Not specified'],
+        ['Website', client.website || 'Not specified'],
+        ['GST Number', client.gstNumber || 'Not specified'],
+        ['DPIIT Registered', client.dpitRegistered || 'Not specified'],
+        ['Username', client.username || 'Not specified'],
+        ['Onboarding Date', client.onboardingDate || 'Not specified'],
+        [''],
+        ['Address Information', ''],
+        ['Address', client.address || 'Not specified'],
+        ['Country', client.country || 'Not specified'],
+        ['State', client.state || 'Not specified'],
+        ['City', client.city || 'Not specified'],
+      ];
+
+      // Add additional emails if any
+      if (client.emails && client.emails.length > 1) {
+        clientData.push([''], ['Additional Emails', '']);
+        client.emails.slice(1).forEach((email, index) => {
+          clientData.push([`Email ${index + 2}`, email]);
+        });
+      }
+
+      // Add additional phones if any
+      if (client.phones && client.phones.length > 1) {
+        clientData.push([''], ['Additional Phones', '']);
+        client.phones.slice(1).forEach((phone, index) => {
+          clientData.push([`Phone ${index + 2}`, phone]);
+        });
+      }
+
+      const worksheet = XLSX.utils.aoa_to_sheet(clientData);
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Client Details');
+
+      XLSX.writeFile(workbook, `client-${client.companyName || 'details'}.xlsx`);
+    } catch (error) {
+      console.error('Error generating Excel:', error);
+      alert('Failed to generate Excel file. Please try again.');
+    }
+  };
 
   if (loading) {
     return (
@@ -114,19 +209,38 @@ const ClientView = () => {
               Back to Clients
             </button>
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">{client.name}</h1>
+              <h1 className="text-3xl font-bold text-gray-900">{client.company_name}</h1>
               <p className="text-gray-600">Client details and relationship overview</p>
             </div>
           </div>
           <div className="flex space-x-3">
-            <button className="btn-secondary flex items-center">
+            <button
+              onClick={handlePrint}
+              className="btn-secondary flex items-center"
+            >
               <PrinterIcon className="h-4 w-4 mr-2" />
               Print
             </button>
-            <button className="btn-secondary flex items-center">
-              <DocumentArrowDownIcon className="h-4 w-4 mr-2" />
-              Export
-            </button>
+            <div className="relative group">
+              <button className="btn-secondary flex items-center">
+                <DocumentArrowDownIcon className="h-4 w-4 mr-2" />
+                Export
+              </button>
+              <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10">
+                <button
+                  onClick={handleExportPDF}
+                  className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                >
+                  Export as PDF
+                </button>
+                <button
+                  onClick={handleExportExcel}
+                  className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                >
+                  Export as Excel
+                </button>
+              </div>
+            </div>
             <button
               onClick={() => navigate(`/clients/${client.id}/edit`)}
               className="btn-primary flex items-center"
@@ -137,6 +251,13 @@ const ClientView = () => {
           </div>
         </div>
       </div>
+
+      <div id="client-print-content">
+        <div className="print-only" style={{display: 'none'}}>
+          <h1>{client.companyName}</h1>
+          <p>Client Details and Information</p>
+          <hr style={{margin: '20px 0'}} />
+        </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Main Content */}
@@ -158,7 +279,7 @@ const ClientView = () => {
                   <BuildingOfficeIcon className="h-5 w-5 text-gray-400" />
                   <div>
                     <p className="text-sm text-gray-500">Company Name</p>
-                    <p className="text-sm font-medium text-gray-900">{client.companyName || 'Not specified'}</p>
+                    <p className="text-sm font-medium text-gray-900">{client.company_name || 'Not specified'}</p>
                   </div>
                 </div>
 
@@ -166,7 +287,7 @@ const ClientView = () => {
                   <BuildingOfficeIcon className="h-5 w-5 text-gray-400" />
                   <div>
                     <p className="text-sm text-gray-500">Company Type</p>
-                    <p className="text-sm font-medium text-gray-900">{client.companyType || 'Not specified'}</p>
+                    <p className="text-sm font-medium text-gray-900">{client.company_type || 'Not specified'}</p>
                   </div>
                 </div>
 
@@ -239,20 +360,20 @@ const ClientView = () => {
                 <div>
                   <p className="text-sm text-gray-500">DPIIT Registered</p>
                   <p className="text-sm font-medium text-gray-900">
-                    {client.dpiitRegistered === 'yes' ? 'Yes' : client.dpiitRegistered === 'no' ? 'No' : 'Not specified'}
+                    {client.dpiit_registered ? 'Yes' : 'No'}
                   </p>
                 </div>
 
-                {client.dpiitRegistered === 'yes' && (
+                {client.dpiit_registered && (
                   <div>
-                    <p className="text-sm text-gray-500">Valid Till</p>
-                    <p className="text-sm font-medium text-gray-900">{client.validTill || 'Not specified'}</p>
+                    <p className="text-sm text-gray-500">DPIIT Number</p>
+                    <p className="text-sm font-medium text-gray-900">{client.dpiit_number || 'Not specified'}</p>
                   </div>
                 )}
 
                 <div>
                   <p className="text-sm text-gray-500">Onboarding Date</p>
-                  <p className="text-sm font-medium text-gray-900">{client.onboardingDate || 'Not specified'}</p>
+                  <p className="text-sm font-medium text-gray-900">{client.onboarding_date || 'Not specified'}</p>
                 </div>
               </div>
             </div>
@@ -288,7 +409,7 @@ const ClientView = () => {
           <div className="card">
             <h2 className="text-xl font-semibold text-gray-900 mb-6">Uploaded Documents</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {client.dpiitRegistered === 'yes' && (
+              {client.dpiit_registered && (
                 <div>
                   <p className="text-sm font-medium text-gray-700">DPIIT Certificate</p>
                   <p className="text-sm text-gray-500 mt-1">
@@ -394,20 +515,28 @@ const ClientView = () => {
             <h2 className="text-xl font-semibold text-gray-900 mb-6">Business Statistics</h2>
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
               <div className="text-center">
-                <div className="text-3xl font-bold text-blue-600">{client.totalOrders}</div>
+                <div className="text-3xl font-bold text-blue-600">{client.totalOrders || 0}</div>
                 <div className="text-sm text-gray-500">Total Orders</div>
               </div>
               <div className="text-center">
-                <div className="text-3xl font-bold text-green-600">{client.totalSpent}</div>
+                <div className="text-3xl font-bold text-green-600">{client.totalSpent || '₹0'}</div>
                 <div className="text-sm text-gray-500">Total Spent</div>
               </div>
               <div className="text-center">
-                <div className="text-3xl font-bold text-purple-600">{client.joinDate}</div>
+                <div className="text-3xl font-bold text-purple-600">{client.created_at || client.joinDate || 'N/A'}</div>
                 <div className="text-sm text-gray-500">Client Since</div>
               </div>
               <div className="text-center">
                 <div className="text-3xl font-bold text-orange-600">
-                  ₹{(parseFloat(client.totalSpent.replace('₹', '').replace(/,/g, '')) / client.totalOrders).toFixed(0)}
+                  ₹{(() => {
+                    const totalSpent = client.totalSpent || '₹0';
+                    const totalOrders = client.totalOrders || 1;
+                    if (typeof totalSpent === 'string' && totalSpent.includes('₹')) {
+                      const amount = parseFloat(totalSpent.replace('₹', '').replace(/,/g, ''));
+                      return (amount / totalOrders).toFixed(0);
+                    }
+                    return '0';
+                  })()}
                 </div>
                 <div className="text-sm text-gray-500">Avg Order Value</div>
               </div>
@@ -444,7 +573,7 @@ const ClientView = () => {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {client.recentOrders.map((order) => (
+                  {(client.recentOrders || []).map((order) => (
                     <tr key={order.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <button 
@@ -483,7 +612,7 @@ const ClientView = () => {
           <div className="card">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Contact History</h3>
             <div className="space-y-4">
-              {client.contactHistory.map((contact, index) => (
+              {(client.contactHistory || []).map((contact, index) => (
                 <div key={index} className="border-l-4 border-blue-200 pl-4">
                   <div className="flex items-center justify-between">
                     <p className="text-sm font-medium text-gray-900">{contact.type}</p>
@@ -500,7 +629,7 @@ const ClientView = () => {
           <div className="card">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Documents</h3>
             <div className="space-y-3">
-              {client.documents.map((doc, index) => (
+              {(client.documents || []).map((doc, index) => (
                 <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                   <div>
                     <p className="text-sm font-medium text-gray-900">{doc.name}</p>
@@ -536,6 +665,7 @@ const ClientView = () => {
             </div>
           </div>
         </div>
+      </div>
       </div>
     </div>
   );

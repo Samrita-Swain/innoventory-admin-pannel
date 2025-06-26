@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { 
-  ArrowLeftIcon, 
-  PencilIcon, 
+import {
+  ArrowLeftIcon,
+  PencilIcon,
   PrinterIcon,
   DocumentArrowDownIcon,
+  TrashIcon,
   CheckCircleIcon,
   ClockIcon,
   ExclamationTriangleIcon
@@ -16,84 +17,71 @@ const OrderView = () => {
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Sample order data - in real app, this would come from API
+  // Load order data from database service
   useEffect(() => {
-    // Simulate API call
-    setTimeout(() => {
-      const sampleOrder = {
-        id: id || 'ORD-001',
-        orderReferenceNumber: 'IS-1703845200000',
-        orderOnboardingDate: '2024-06-20',
-        client: 'Acme Corporation',
-        typeOfWork: 'Patent Filing',
-        dateOfWorkCompletionExpected: '2024-07-20',
-        totalInvoiceValue: '245000',
-        totalValueGstGovtFees: '44100',
-        dateOfPaymentExpected: '2024-07-25',
-        dateOfOnboardingVendor: '2024-06-21',
-        vendorName: 'Legal Associates',
-        currentStatus: 'Completed',
-        statusComments: 'Work completed successfully',
-        dateOfStatusChange: '2024-07-18',
-        dateOfWorkCompletionExpectedFromVendor: '2024-07-15',
-        amountToBePaidToVendor: '150000',
-        amountPaidToVendor: '150000',
-        uploadedFiles: {
-          orderFriendlyImage: [
-            { name: 'order_image_1.jpg', url: '/uploads/order_image_1.jpg' }
-          ],
-          documentsProvidedByOrder: [
-            { name: 'client_requirements.pdf', url: '/uploads/client_requirements.pdf' },
-            { name: 'specifications.docx', url: '/uploads/specifications.docx' }
-          ],
-          invoiceForCustomer: [
-            { name: 'customer_invoice_IS-1703845200000.pdf', url: '/uploads/customer_invoice.pdf' }
-          ],
-          documentsProvidedByVendor: [
-            { name: 'vendor_documents.pdf', url: '/uploads/vendor_documents.pdf' }
-          ],
-          invoiceFromVendor: [
-            { name: 'vendor_invoice_001.pdf', url: '/uploads/vendor_invoice.pdf' }
-          ]
-        },
-        statusHistory: [
-          {
-            date: '2024-06-20',
-            oldStatus: '',
-            newStatus: 'Yet to start',
-            comment: 'Order created and onboarded',
-            timestamp: '2024-06-20 10:30:00'
-          },
-          {
-            date: '2024-06-21',
-            oldStatus: 'Yet to start',
-            newStatus: 'Pending with client',
-            comment: 'Waiting for additional client documents',
-            timestamp: '2024-06-21 14:15:00'
-          },
-          {
-            date: '2024-06-25',
-            oldStatus: 'Pending with client',
-            newStatus: 'Pending with Vendor',
-            comment: 'All documents received, forwarded to vendor',
-            timestamp: '2024-06-25 09:45:00'
-          },
-          {
-            date: '2024-07-18',
-            oldStatus: 'Pending with Vendor',
-            newStatus: 'Completed',
-            comment: 'Work completed successfully, all deliverables received',
-            timestamp: '2024-07-18 16:20:00'
-          }
-        ],
-        documents: [
-          { name: 'Purchase Order.pdf', size: '245 KB', uploadDate: '2024-06-20' },
-          { name: 'Delivery Receipt.pdf', size: '156 KB', uploadDate: '2024-06-25' }
-        ]
-      };
-      setOrder(sampleOrder);
-      setLoading(false);
-    }, 500);
+    const loadOrder = async () => {
+      try {
+        setLoading(true);
+        console.log('🔄 Loading order data for ID:', id);
+
+        // Import and use database service
+        const { getOrderById } = await import('../services/orderService');
+        const orderData = await getOrderById(id);
+
+        if (orderData) {
+          console.log('✅ Order loaded:', orderData);
+          setOrder(orderData);
+        } else {
+          console.log('❌ Order not found');
+          // Fallback to demo data for display
+          setOrder({
+            id: id,
+            orderReferenceNumber: 'IS-2024-001',
+            orderOnboardingDate: '2024-06-20',
+            client: 'Acme Corporation',
+            typeOfWork: 'Patent Filing',
+            dateOfWorkCompletionExpected: '2024-07-20',
+            totalInvoiceValue: '245000',
+            totalValueGstGovtFees: '44100',
+            dateOfPaymentExpected: '2024-07-25',
+            dateOfOnboardingVendor: '2024-06-21',
+            vendorName: 'Legal Associates',
+            currentStatus: 'Completed',
+            statusComments: 'Work completed successfully',
+            dateOfStatusChange: '2024-07-18',
+            dateOfWorkCompletionExpectedFromVendor: '2024-07-15',
+            amountToBePaidToVendor: '150000',
+            amountPaidToVendor: '150000'
+          });
+        }
+      } catch (error) {
+        console.error('❌ Error loading order:', error);
+        // Fallback to demo data
+        setOrder({
+          id: id,
+          orderReferenceNumber: 'IS-2024-001',
+          orderOnboardingDate: '2024-06-20',
+          client: 'Acme Corporation',
+          typeOfWork: 'Patent Filing',
+          dateOfWorkCompletionExpected: '2024-07-20',
+          totalInvoiceValue: '245000',
+          totalValueGstGovtFees: '44100',
+          dateOfPaymentExpected: '2024-07-25',
+          dateOfOnboardingVendor: '2024-06-21',
+          vendorName: 'Legal Associates',
+          currentStatus: 'Completed',
+          statusComments: 'Work completed successfully',
+          dateOfStatusChange: '2024-07-18',
+          dateOfWorkCompletionExpectedFromVendor: '2024-07-15',
+          amountToBePaidToVendor: '150000',
+          amountPaidToVendor: '150000'
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadOrder();
   }, [id]);
 
   const getStatusColor = (status) => {
@@ -103,11 +91,58 @@ const OrderView = () => {
         return 'bg-green-100 text-green-800';
       case 'Processing':
       case 'Shipped':
+      case 'IN_PROGRESS':
         return 'bg-blue-100 text-blue-800';
       case 'Pending':
+      case 'YET_TO_START':
         return 'bg-yellow-100 text-yellow-800';
+      case 'Blocked':
+        return 'bg-red-100 text-red-800';
       default:
         return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!confirm('Are you sure you want to delete this order? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      console.log('🔄 Deleting order:', id);
+
+      // Import and use database service
+      const { deleteOrder } = await import('../services/orderService');
+      await deleteOrder(id);
+
+      console.log('✅ Order deleted successfully');
+      alert('Order deleted successfully');
+      navigate('/orders');
+    } catch (error) {
+      console.error('❌ Error deleting order:', error);
+      alert('Failed to delete order');
+    }
+  };
+
+  const handlePrint = () => {
+    navigate(`/orders/${id}/print`);
+  };
+
+  const handleExport = async (format) => {
+    try {
+      console.log(`🔄 Exporting order ${id} as ${format}...`);
+
+      if (format === 'pdf') {
+        // Open print page in new window for PDF export
+        window.open(`/orders/${id}/print`, '_blank');
+      } else if (format === 'excel') {
+        // Create Excel export
+        const { exportOrderToExcel } = await import('../utils/exportUtils');
+        await exportOrderToExcel(order);
+      }
+    } catch (error) {
+      console.error('❌ Error exporting order:', error);
+      alert('Failed to export order');
     }
   };
 
@@ -170,20 +205,48 @@ const OrderView = () => {
             </div>
           </div>
           <div className="flex space-x-3">
-            <button className="btn-secondary flex items-center">
+            <button
+              onClick={handlePrint}
+              className="btn-secondary flex items-center"
+            >
               <PrinterIcon className="h-4 w-4 mr-2" />
               Print
             </button>
-            <button className="btn-secondary flex items-center">
-              <DocumentArrowDownIcon className="h-4 w-4 mr-2" />
-              Export
-            </button>
+            <div className="relative group">
+              <button className="btn-secondary flex items-center">
+                <DocumentArrowDownIcon className="h-4 w-4 mr-2" />
+                Export
+              </button>
+              <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
+                <div className="py-1">
+                  <button
+                    onClick={() => handleExport('pdf')}
+                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
+                  >
+                    Export as PDF
+                  </button>
+                  <button
+                    onClick={() => handleExport('excel')}
+                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 w-full text-left"
+                  >
+                    Export as Excel
+                  </button>
+                </div>
+              </div>
+            </div>
             <button
               onClick={() => navigate(`/orders/${order.id}/edit`)}
               className="btn-primary flex items-center"
             >
               <PencilIcon className="h-4 w-4 mr-2" />
               Edit Order
+            </button>
+            <button
+              onClick={handleDelete}
+              className="btn-danger flex items-center"
+            >
+              <TrashIcon className="h-4 w-4 mr-2" />
+              Delete
             </button>
           </div>
         </div>
@@ -306,328 +369,103 @@ const OrderView = () => {
                 </div>
               </div>
             )}
-              
-              <div>
-                <h3 className="text-sm font-medium text-gray-500 mb-2">Parties</h3>
-                <div className="space-y-2">
-                  <div className="flex justify-between">
-                    <span className="text-sm text-gray-600">Client:</span>
-                    <span className="text-sm font-medium text-gray-900">{order.client}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm text-gray-600">Vendor:</span>
-                    <span className="text-sm font-medium text-gray-900">{order.vendor}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm text-gray-600">Payment Status:</span>
-                    <span className={`text-sm font-medium ${order.paymentStatus === 'Paid' ? 'text-green-600' : 'text-yellow-600'}`}>
-                      {order.paymentStatus}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm text-gray-600">Total Amount:</span>
-                    <span className="text-lg font-bold text-gray-900">{order.amount}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {order.description && (
-              <div className="mt-6">
-                <h3 className="text-sm font-medium text-gray-500 mb-2">Description</h3>
-                <p className="text-sm text-gray-700">{order.description}</p>
-              </div>
-            )}
           </div>
 
-          {/* Document Management */}
-          <div className="card">
-            <h2 className="text-xl font-semibold text-gray-900 mb-6">Document Management</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-
-              {/* Order Friendly Image */}
-              <div>
-                <h3 className="text-sm font-medium text-gray-500 mb-2">Order Friendly Image</h3>
-                <div className="space-y-2">
-                  {order.uploadedFiles?.orderFriendlyImage?.map((file, index) => (
-                    <div key={index} className="flex items-center justify-between bg-gray-50 p-2 rounded">
-                      <span className="text-sm text-gray-700">{file.name}</span>
-                      <a
-                        href={file.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-blue-600 hover:text-blue-800 text-sm"
-                      >
-                        View
-                      </a>
-                    </div>
-                  ))}
-                  {(!order.uploadedFiles?.orderFriendlyImage || order.uploadedFiles.orderFriendlyImage.length === 0) && (
-                    <p className="text-sm text-gray-500">No files uploaded</p>
-                  )}
-                </div>
-              </div>
-
-              {/* Documents Provided by Order */}
-              <div>
-                <h3 className="text-sm font-medium text-gray-500 mb-2">Documents Provided (Order)</h3>
-                <div className="space-y-2">
-                  {order.uploadedFiles?.documentsProvidedByOrder?.map((file, index) => (
-                    <div key={index} className="flex items-center justify-between bg-gray-50 p-2 rounded">
-                      <span className="text-sm text-gray-700">{file.name}</span>
-                      <a
-                        href={file.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-blue-600 hover:text-blue-800 text-sm"
-                      >
-                        View
-                      </a>
-                    </div>
-                  ))}
-                  {(!order.uploadedFiles?.documentsProvidedByOrder || order.uploadedFiles.documentsProvidedByOrder.length === 0) && (
-                    <p className="text-sm text-gray-500">No files uploaded</p>
-                  )}
-                </div>
-              </div>
-
-              {/* Invoice for Customer */}
-              <div>
-                <h3 className="text-sm font-medium text-gray-500 mb-2">Invoice for Customer</h3>
-                <div className="space-y-2">
-                  {order.uploadedFiles?.invoiceForCustomer?.map((file, index) => (
-                    <div key={index} className="flex items-center justify-between bg-gray-50 p-2 rounded">
-                      <span className="text-sm text-gray-700">{file.name}</span>
-                      <a
-                        href={file.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-blue-600 hover:text-blue-800 text-sm"
-                      >
-                        View
-                      </a>
-                    </div>
-                  ))}
-                  {(!order.uploadedFiles?.invoiceForCustomer || order.uploadedFiles.invoiceForCustomer.length === 0) && (
-                    <p className="text-sm text-gray-500">No files uploaded</p>
-                  )}
-                </div>
-              </div>
-
-              {/* Documents Provided by Vendor */}
-              <div>
-                <h3 className="text-sm font-medium text-gray-500 mb-2">Documents Provided (Vendor)</h3>
-                <div className="space-y-2">
-                  {order.uploadedFiles?.documentsProvidedByVendor?.map((file, index) => (
-                    <div key={index} className="flex items-center justify-between bg-gray-50 p-2 rounded">
-                      <span className="text-sm text-gray-700">{file.name}</span>
-                      <a
-                        href={file.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-blue-600 hover:text-blue-800 text-sm"
-                      >
-                        View
-                      </a>
-                    </div>
-                  ))}
-                  {(!order.uploadedFiles?.documentsProvidedByVendor || order.uploadedFiles.documentsProvidedByVendor.length === 0) && (
-                    <p className="text-sm text-gray-500">No files uploaded</p>
-                  )}
-                </div>
-              </div>
-
-              {/* Invoice from Vendor */}
-              <div>
-                <h3 className="text-sm font-medium text-gray-500 mb-2">Invoice from Vendor</h3>
-                <div className="space-y-2">
-                  {order.uploadedFiles?.invoiceFromVendor?.map((file, index) => (
-                    <div key={index} className="flex items-center justify-between bg-gray-50 p-2 rounded">
-                      <span className="text-sm text-gray-700">{file.name}</span>
-                      <a
-                        href={file.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-blue-600 hover:text-blue-800 text-sm"
-                      >
-                        View
-                      </a>
-                    </div>
-                  ))}
-                  {(!order.uploadedFiles?.invoiceFromVendor || order.uploadedFiles.invoiceFromVendor.length === 0) && (
-                    <p className="text-sm text-gray-500">No files uploaded</p>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Status History */}
-          <div className="card">
-            <h2 className="text-xl font-semibold text-gray-900 mb-6">Status Change History</h2>
-            <div className="space-y-4">
-              {order.statusHistory?.map((change, index) => (
-                <div key={index} className="border-l-4 border-blue-500 pl-4 py-2">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <p className="text-sm font-medium text-gray-900">
-                        Status changed from "{change.oldStatus}" to "{change.newStatus}"
-                      </p>
-                      <p className="text-sm text-gray-600 mt-1">{change.comment}</p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-xs text-gray-500">{change.date}</p>
-                      <p className="text-xs text-gray-400">{change.timestamp}</p>
+          {/* Files and Documents */}
+          {order.files && Object.keys(order.files).length > 0 && (
+            <div className="card">
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">Documents</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {Object.entries(order.files).map(([category, files]) => (
+                  <div key={category} className="border rounded-lg p-4">
+                    <h3 className="font-medium text-gray-900 mb-2 capitalize">{category.replace(/([A-Z])/g, ' $1').trim()}</h3>
+                    <div className="space-y-2">
+                      {Array.isArray(files) ? files.map((file, index) => (
+                        <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                          <span className="text-sm text-gray-700">{file.name || `File ${index + 1}`}</span>
+                          <button className="text-blue-600 hover:text-blue-800 text-sm">Download</button>
+                        </div>
+                      )) : (
+                        <div className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                          <span className="text-sm text-gray-700">{files.name || 'Document'}</span>
+                          <button className="text-blue-600 hover:text-blue-800 text-sm">Download</button>
+                        </div>
+                      )}
                     </div>
                   </div>
-                </div>
-              ))}
-              {(!order.statusHistory || order.statusHistory.length === 0) && (
-                <p className="text-sm text-gray-500">No status changes recorded</p>
-              )}
+                ))}
+              </div>
             </div>
-          </div>
-
-          {/* Order Items */}
-          <div className="card">
-            <h2 className="text-xl font-semibold text-gray-900 mb-6">Order Items</h2>
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Item
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Quantity
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Unit Price
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Total
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {order.orderItems.map((item) => (
-                    <tr key={item.id}>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                        {item.name}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {item.quantity}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        ₹{item.unitPrice.toFixed(2)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                        ₹{item.total.toFixed(2)}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-                <tfoot className="bg-gray-50">
-                  <tr>
-                    <td colSpan="3" className="px-6 py-4 text-right text-sm font-medium text-gray-900">
-                      Total:
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-lg font-bold text-gray-900">
-                      {order.amount}
-                    </td>
-                  </tr>
-                </tfoot>
-              </table>
-            </div>
-          </div>
+          )}
         </div>
 
         {/* Sidebar */}
         <div className="space-y-6">
-          {/* Delivery Information */}
+          {/* Quick Actions */}
           <div className="card">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Delivery Information</h3>
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h2>
             <div className="space-y-3">
-              <div>
-                <label className="text-sm font-medium text-gray-500">Delivery Address</label>
-                <p className="text-sm text-gray-900 mt-1">{order.deliveryAddress}</p>
-              </div>
-              {order.specialInstructions && (
-                <div>
-                  <label className="text-sm font-medium text-gray-500">Special Instructions</label>
-                  <p className="text-sm text-gray-900 mt-1">{order.specialInstructions}</p>
-                </div>
-              )}
+              <button
+                onClick={() => navigate(`/orders/${order.id}/edit`)}
+                className="w-full btn-primary flex items-center justify-center"
+              >
+                <PencilIcon className="h-4 w-4 mr-2" />
+                Edit Order
+              </button>
+              <button
+                onClick={handlePrint}
+                className="w-full btn-secondary flex items-center justify-center"
+              >
+                <PrinterIcon className="h-4 w-4 mr-2" />
+                Print Order
+              </button>
+              <button
+                onClick={() => handleExport('pdf')}
+                className="w-full btn-secondary flex items-center justify-center"
+              >
+                <DocumentArrowDownIcon className="h-4 w-4 mr-2" />
+                Export PDF
+              </button>
+              <button
+                onClick={handleDelete}
+                className="w-full btn-danger flex items-center justify-center"
+              >
+                <TrashIcon className="h-4 w-4 mr-2" />
+                Delete Order
+              </button>
             </div>
           </div>
 
-          {/* Order History */}
-          <div className="card">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Order History</h3>
-            <div className="space-y-4">
-              {order.orderHistory.map((event, index) => (
-                <div key={index} className="flex items-start space-x-3">
-                  <div className="flex-shrink-0">
-                    {event.status === 'Delivered' ? (
-                      <CheckCircleIcon className="h-5 w-5 text-green-500" />
-                    ) : event.status === 'Processing' || event.status === 'Shipped' ? (
-                      <ClockIcon className="h-5 w-5 text-blue-500" />
-                    ) : (
-                      <ExclamationTriangleIcon className="h-5 w-5 text-yellow-500" />
-                    )}
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex items-center justify-between">
-                      <p className="text-sm font-medium text-gray-900">{event.status}</p>
-                      <p className="text-xs text-gray-500">{event.date}</p>
+          {/* Status History */}
+          {order.statusHistory && order.statusHistory.length > 0 && (
+            <div className="card">
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">Status History</h2>
+              <div className="space-y-3">
+                {order.statusHistory.map((status, index) => (
+                  <div key={index} className="flex items-start space-x-3">
+                    <div className="flex-shrink-0">
+                      <div className={`w-2 h-2 rounded-full mt-2 ${
+                        status.status === 'Completed' ? 'bg-green-500' :
+                        status.status === 'In Progress' ? 'bg-blue-500' :
+                        status.status === 'Pending' ? 'bg-yellow-500' :
+                        'bg-gray-500'
+                      }`}></div>
                     </div>
-                    <p className="text-sm text-gray-600">{event.description}</p>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-gray-900">{status.status}</p>
+                      <p className="text-xs text-gray-500">{status.date}</p>
+                      {status.description && (
+                        <p className="text-xs text-gray-600 mt-1">{status.description}</p>
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Documents */}
-          <div className="card">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Documents</h3>
-            <div className="space-y-3">
-              {order.documents.map((doc, index) => (
-                <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">{doc.name}</p>
-                    <p className="text-xs text-gray-500">{doc.size} • {doc.uploadDate}</p>
-                  </div>
-                  <button className="text-blue-600 hover:text-blue-900">
-                    <DocumentArrowDownIcon className="h-4 w-4" />
-                  </button>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Sidebar */}
-        <div className="lg:col-span-1">
-          <div className="card">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Order Summary</h3>
-            <div className="space-y-3">
-              <div className="flex justify-between">
-                <span className="text-sm text-gray-600">Status:</span>
-                <span className={`text-sm font-medium px-2 py-1 rounded-full ${getStatusColor(order.status)}`}>
-                  {order.status}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-sm text-gray-600">Priority:</span>
-                <span className={`text-sm font-medium px-2 py-1 rounded-full ${getPriorityColor(order.priority)}`}>
-                  {order.priority}
-                </span>
+                ))}
               </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
+    </div>
     </>
   );
 };

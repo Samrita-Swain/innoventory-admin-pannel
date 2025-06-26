@@ -1,12 +1,16 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { PlusIcon, PencilIcon, TrashIcon, CheckCircleIcon, XCircleIcon } from '@heroicons/react/24/outline';
 import DataTable from '../components/DataTable/DataTable';
 
 const TypeOfWork = () => {
   const [showAddForm, setShowAddForm] = useState(false);
-  const [typeOfWorkData, setTypeOfWorkData] = useState([
+  // Demo data for display (not saved to database)
+  const [typeOfWorkData, setTypeOfWorkData] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const demoTypeOfWork = [
     {
-      id: 1,
+      id: 'demo-work-1',
       name: 'Software Development',
       description: 'Custom software development and programming services',
       category: 'Technology',
@@ -16,7 +20,7 @@ const TypeOfWork = () => {
       averageRate: '₹2,500/hour'
     },
     {
-      id: 2,
+      id: 'demo-work-2',
       name: 'Digital Marketing',
       description: 'SEO, social media marketing, and online advertising',
       category: 'Marketing',
@@ -26,7 +30,7 @@ const TypeOfWork = () => {
       averageRate: '₹1,800/hour'
     },
     {
-      id: 3,
+      id: 'demo-work-3',
       name: 'Graphic Design',
       description: 'Logo design, branding, and visual identity services',
       category: 'Design',
@@ -36,7 +40,7 @@ const TypeOfWork = () => {
       averageRate: '₹1,200/hour'
     },
     {
-      id: 4,
+      id: 'demo-work-4',
       name: 'Content Writing',
       description: 'Blog posts, articles, and copywriting services',
       category: 'Content',
@@ -46,7 +50,7 @@ const TypeOfWork = () => {
       averageRate: '₹800/hour'
     },
     {
-      id: 5,
+      id: 'demo-work-5',
       name: 'Data Analysis',
       description: 'Business intelligence and data analytics services',
       category: 'Analytics',
@@ -55,7 +59,32 @@ const TypeOfWork = () => {
       totalProjects: 22,
       averageRate: '₹2,200/hour'
     }
-  ]);
+  ];
+
+  // Load type of work from database
+  useEffect(() => {
+    const loadTypeOfWork = async () => {
+      try {
+        setLoading(true);
+        console.log('🔄 Loading type of work from database...');
+        // Import and use database service
+        const { getAllTypeOfWork } = await import('../services/database');
+        const dbTypeOfWork = await getAllTypeOfWork();
+        console.log('✅ Type of work loaded:', dbTypeOfWork);
+
+        console.log('✅ Type of work loaded:', dbTypeOfWork);
+        setTypeOfWorkData(dbTypeOfWork);
+      } catch (err) {
+        console.error('❌ Error loading type of work:', err);
+        // Fallback to demo data if database fails
+        setTypeOfWorkData(demoTypeOfWork);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadTypeOfWork();
+  }, []);
 
   const columns = [
     {
@@ -142,20 +171,53 @@ const TypeOfWork = () => {
     // Implementation for edit functionality
   };
 
-  const handleToggleStatus = (id, currentStatus) => {
-    const newStatus = currentStatus === 'Active' ? 'Inactive' : 'Active';
-    setTypeOfWorkData(prevData =>
-      prevData.map(item =>
-        item.id === id
-          ? { ...item, status: newStatus }
-          : item
-      )
-    );
+  const handleToggleStatus = async (id, currentStatus) => {
+    try {
+      const newStatus = currentStatus === 'Active' ? 'Inactive' : 'Active';
+      console.log(`🔄 Toggling status for type of work ${id} to ${newStatus}...`);
+
+      // Import and use database service
+      const { updateTypeOfWorkStatus } = await import('../services/database');
+      await updateTypeOfWorkStatus(id, newStatus);
+
+      // Update local state
+      setTypeOfWorkData(prevData =>
+        prevData.map(item =>
+          item.id === id
+            ? { ...item, status: newStatus }
+            : item
+        )
+      );
+
+      console.log(`✅ Type of work status updated to ${newStatus}`);
+      alert(`Type of work status updated to ${newStatus}`);
+    } catch (error) {
+      console.error('❌ Error updating type of work status:', error);
+      alert('Failed to update type of work status');
+    }
   };
 
-  const handleDelete = (id) => {
-    console.log('Delete type of work:', id);
-    // Implementation for delete functionality
+  const handleDelete = async (id) => {
+    if (!confirm('Are you sure you want to delete this type of work? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      console.log(`🔄 Deleting type of work ${id}...`);
+
+      // Import and use database service
+      const { deleteTypeOfWork } = await import('../services/database');
+      await deleteTypeOfWork(id);
+
+      // Update local state
+      setTypeOfWorkData(prevData => prevData.filter(item => item.id !== id));
+
+      console.log('✅ Type of work deleted successfully');
+      alert('Type of work deleted successfully');
+    } catch (error) {
+      console.error('❌ Error deleting type of work:', error);
+      alert('Failed to delete type of work');
+    }
   };
 
   return (
