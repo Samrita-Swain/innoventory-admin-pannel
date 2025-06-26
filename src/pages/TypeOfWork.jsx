@@ -6,6 +6,7 @@ import DataTable from '../components/DataTable/DataTable';
 const TypeOfWork = () => {
   const navigate = useNavigate();
   const [showAddForm, setShowAddForm] = useState(false);
+  const [showViewModal, setShowViewModal] = useState(false);
   const [typeOfWorkData, setTypeOfWorkData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [formData, setFormData] = useState({
@@ -67,45 +68,54 @@ const TypeOfWork = () => {
     }
   ];
 
+  // Transform database data to match expected format
+  const transformTypeOfWorkData = (data) => {
+    return data.map(item => ({
+      ...item,
+      status: item.isActive !== undefined ? (item.isActive ? 'Active' : 'Inactive') : (item.status || 'Active'),
+      createdDate: item.createdAt ? new Date(item.createdAt).toLocaleDateString() : (item.createdDate || new Date().toLocaleDateString())
+    }));
+  };
+
   // Load type of work from database
-  useEffect(() => {
-    const loadTypeOfWork = async () => {
-      try {
-        setLoading(true);
-        console.log('🔄 Loading type of work from database...');
-        // Import and use database service
-        const { getAllTypeOfWork } = await import('../services/database');
-        const dbTypeOfWork = await getAllTypeOfWork();
-        console.log('✅ Type of work loaded:', dbTypeOfWork);
+  const loadTypeOfWork = async () => {
+    try {
+      setLoading(true);
+      console.log('🔄 Loading type of work from database...');
+      // Import and use database service
+      const { getAllTypeOfWork } = await import('../services/typeOfWorkService');
+      const dbTypeOfWork = await getAllTypeOfWork();
+      console.log('✅ Type of work loaded:', dbTypeOfWork);
 
-        console.log('✅ Type of work loaded:', dbTypeOfWork);
+      console.log('✅ Type of work loaded:', dbTypeOfWork);
 
-        // If database is empty, add demo data and save to database
-        if (dbTypeOfWork && dbTypeOfWork.length === 0) {
-          console.log('📝 Database is empty, adding demo data...');
-          await addDemoDataToDatabase();
-          // Reload data after adding demo data
-          const updatedData = await getAllTypeOfWork();
-          setTypeOfWorkData(updatedData);
-        } else {
-          setTypeOfWorkData(dbTypeOfWork);
-        }
-      } catch (err) {
-        console.error('❌ Error loading type of work:', err);
-        // Fallback to demo data if database fails
-        console.log('🔄 Using demo data as fallback and attempting to save to database');
-        setTypeOfWorkData(demoTypeOfWork);
-        // Try to save demo data to database in background
-        try {
-          await addDemoDataToDatabase();
-        } catch (saveError) {
-          console.log('⚠️ Could not save demo data to database:', saveError.message);
-        }
-      } finally {
-        setLoading(false);
+      // If database is empty, add demo data and save to database
+      if (dbTypeOfWork && dbTypeOfWork.length === 0) {
+        console.log('📝 Database is empty, adding demo data...');
+        await addDemoDataToDatabase();
+        // Reload data after adding demo data
+        const updatedData = await getAllTypeOfWork();
+        setTypeOfWorkData(transformTypeOfWorkData(updatedData));
+      } else {
+        setTypeOfWorkData(transformTypeOfWorkData(dbTypeOfWork));
       }
-    };
+    } catch (err) {
+      console.error('❌ Error loading type of work:', err);
+      // Fallback to demo data if database fails
+      console.log('🔄 Using demo data as fallback and attempting to save to database');
+      setTypeOfWorkData(transformTypeOfWorkData(demoTypeOfWork));
+      // Try to save demo data to database in background
+      try {
+        await addDemoDataToDatabase();
+      } catch (saveError) {
+        console.log('⚠️ Could not save demo data to database:', saveError.message);
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     loadTypeOfWork();
   }, []);
 
@@ -130,6 +140,39 @@ const TypeOfWork = () => {
     } catch (error) {
       console.log('❌ Error saving demo data:', error.message);
       throw error;
+    }
+  };
+
+  // Toggle status function
+  const toggleStatus = async (id, currentStatus) => {
+    try {
+      const newStatus = currentStatus === 'Active' ? 'Inactive' : 'Active';
+      console.log(`🔄 Toggling status for ${id} from ${currentStatus} to ${newStatus}`);
+
+      // Update in database
+      const { updateTypeOfWork } = await import('../services/typeOfWorkService');
+      await updateTypeOfWork(id, { isActive: newStatus === 'Active' });
+
+      // Update local state
+      setTypeOfWorkData(prevData =>
+        prevData.map(item =>
+          item.id === id
+            ? { ...item, status: newStatus, isActive: newStatus === 'Active' }
+            : item
+        )
+      );
+
+      console.log(`✅ Status updated successfully for ${id}`);
+    } catch (error) {
+      console.error('❌ Error updating status:', error);
+      // For demo data, just update local state
+      setTypeOfWorkData(prevData =>
+        prevData.map(item =>
+          item.id === id
+            ? { ...item, status: currentStatus === 'Active' ? 'Inactive' : 'Active' }
+            : item
+        )
+      );
     }
   };
 
@@ -250,27 +293,34 @@ const TypeOfWork = () => {
       render: (_, row) => (
         <div className="flex space-x-2">
           <button
-            onClick={() => navigate(`/type-of-work/view/${row.id}`)}
+            onClick={() => {
+              setFormData({
+                name: row.name,
+                description: row.description
+              });
+              setEditingId(row.id);
+              setShowViewModal(true);
+            }}
             className="text-gray-600 hover:text-gray-800"
             title="View"
           >
             <EyeIcon className="h-4 w-4" />
           </button>
           <button
-            onClick={() => navigate(`/type-of-work/edit/${row.id}`)}
+            onClick={() => handleEdit(row)}
             className="text-blue-600 hover:text-blue-800"
             title="Edit"
           >
             <PencilIcon className="h-4 w-4" />
           </button>
           <button
-            onClick={() => handleStatusToggle(row.id, row.status)}
+            onClick={() => toggleStatus(row.id, row.status)}
             className={`${
               row.status === 'Active'
                 ? 'text-green-600 hover:text-green-800'
                 : 'text-gray-400 hover:text-gray-600'
             }`}
-            title={row.status === 'Active' ? 'Deactivate' : 'Activate'}
+            title={`${row.status} - Click to toggle to ${row.status === 'Active' ? 'Inactive' : 'Active'}`}
           >
             {row.status === 'Active' ? (
               <CheckCircleIcon className="h-4 w-4" />
@@ -313,6 +363,33 @@ const TypeOfWork = () => {
             <PlusIcon className="h-5 w-5 mr-2" />
             Add New Work Type
           </button>
+        </div>
+      </div>
+
+      {/* Status Legend */}
+      <div className="bg-gray-50 rounded-lg p-3 mb-4">
+        <div className="flex items-center space-x-6 text-sm text-gray-600">
+          <span className="font-medium">Action Icons:</span>
+          <div className="flex items-center space-x-2">
+            <EyeIcon className="w-4 h-4 text-gray-600" />
+            <span>View</span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <PencilIcon className="w-4 h-4 text-blue-600" />
+            <span>Edit</span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <CheckCircleIcon className="w-4 h-4 text-green-600" />
+            <span>Toggle Active</span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <XCircleIcon className="w-4 h-4 text-gray-400" />
+            <span>Toggle Inactive</span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <TrashIcon className="w-4 h-4 text-red-600" />
+            <span>Delete</span>
+          </div>
         </div>
       </div>
 
@@ -397,6 +474,72 @@ const TypeOfWork = () => {
                   </button>
                 </div>
               </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* View Modal */}
+      {showViewModal && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div className="mt-3">
+              <h3 className="text-lg font-medium text-gray-900 mb-4">
+                View Work Type
+              </h3>
+
+              <div className="space-y-4">
+                {/* Work Type Name */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Work Type Name
+                  </label>
+                  <div className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50">
+                    {formData.name}
+                  </div>
+                </div>
+
+                {/* Description */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Description
+                  </label>
+                  <div className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 min-h-[80px]">
+                    {formData.description}
+                  </div>
+                </div>
+
+                {/* Status and Date Info */}
+                <div className="text-sm text-gray-600 bg-gray-50 p-3 rounded-md">
+                  <p><strong>Status:</strong> {typeOfWorkData.find(item => item.id === editingId)?.status || 'Active'}</p>
+                  <p><strong>Created Date:</strong> {typeOfWorkData.find(item => item.id === editingId)?.createdDate || 'N/A'}</p>
+                </div>
+
+                {/* Modal Actions */}
+                <div className="flex justify-end space-x-3 pt-4">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowViewModal(false);
+                      setEditingId(null);
+                      setFormData({ name: '', description: '' });
+                    }}
+                    className="btn-secondary"
+                  >
+                    Close
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowViewModal(false);
+                      setShowAddForm(true);
+                    }}
+                    className="btn-primary"
+                  >
+                    Edit
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>

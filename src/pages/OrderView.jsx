@@ -51,7 +51,12 @@ const OrderView = () => {
             dateOfStatusChange: '2024-07-18',
             dateOfWorkCompletionExpectedFromVendor: '2024-07-15',
             amountToBePaidToVendor: '150000',
-            amountPaidToVendor: '150000'
+            amountPaidToVendor: '150000',
+            statusHistory: [
+              { status: 'Pending', date: '2024-06-20', description: 'Order created' },
+              { status: 'In Progress', date: '2024-06-21', description: 'Vendor assigned' },
+              { status: 'Completed', date: '2024-07-18', description: 'Work completed successfully' }
+            ]
           });
         }
       } catch (error) {
@@ -74,7 +79,12 @@ const OrderView = () => {
           dateOfStatusChange: '2024-07-18',
           dateOfWorkCompletionExpectedFromVendor: '2024-07-15',
           amountToBePaidToVendor: '150000',
-          amountPaidToVendor: '150000'
+          amountPaidToVendor: '150000',
+          statusHistory: [
+            { status: 'Pending', date: '2024-06-20', description: 'Order created' },
+            { status: 'In Progress', date: '2024-06-21', description: 'Vendor assigned' },
+            { status: 'Completed', date: '2024-07-18', description: 'Work completed successfully' }
+          ]
         });
       } finally {
         setLoading(false);
@@ -437,11 +447,27 @@ const OrderView = () => {
           </div>
 
           {/* Status History */}
-          {order.statusHistory && order.statusHistory.length > 0 && (
-            <div className="card">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Status History</h2>
-              <div className="space-y-3">
-                {order.statusHistory.map((status, index) => (
+          {(() => {
+            // Parse statusHistory if it's a string, or use as array if already parsed
+            let statusHistory = [];
+            if (order.statusHistory) {
+              if (typeof order.statusHistory === 'string') {
+                try {
+                  statusHistory = JSON.parse(order.statusHistory);
+                } catch (e) {
+                  console.warn('Failed to parse statusHistory:', e);
+                  statusHistory = [];
+                }
+              } else if (Array.isArray(order.statusHistory)) {
+                statusHistory = order.statusHistory;
+              }
+            }
+
+            return statusHistory && statusHistory.length > 0 && (
+              <div className="card">
+                <h2 className="text-lg font-semibold text-gray-900 mb-4">Status History</h2>
+                <div className="space-y-3">
+                  {statusHistory.map((status, index) => (
                   <div key={index} className="flex items-start space-x-3">
                     <div className="flex-shrink-0">
                       <div className={`w-2 h-2 rounded-full mt-2 ${
@@ -459,10 +485,11 @@ const OrderView = () => {
                       )}
                     </div>
                   </div>
-                ))}
+                  ))}
+                </div>
               </div>
-            </div>
-          )}
+            );
+          })()}
         </div>
       </div>
     </div>

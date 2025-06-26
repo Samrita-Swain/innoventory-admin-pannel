@@ -37,11 +37,73 @@ export const getAllSubAdmins = async () => {
   }
 };
 
+// Demo sub-admins fallback data
+const demoSubAdmins = [
+  {
+    id: 'demo-sub-1',
+    name: 'John Smith',
+    email: 'john.smith@company.com',
+    phone: '+91-9876543210',
+    onboarding_date: '2024-01-15',
+    onboardingDate: '2024-01-15',
+    address: 'Tech Park, Whitefield, Bangalore',
+    country: 'India',
+    state: 'Karnataka',
+    city: 'Bangalore',
+    term_of_work: 'Full-time',
+    termOfWork: 'Full-time',
+    role: 'Senior Admin',
+    department: 'Operations',
+    isActive: true,
+    createdAt: '2024-01-15T00:00:00Z',
+    updatedAt: '2024-01-15T00:00:00Z'
+  },
+  {
+    id: 'demo-sub-2',
+    name: 'Sarah Johnson',
+    email: 'sarah.johnson@company.com',
+    phone: '+91-8765432109',
+    onboarding_date: '2024-02-01',
+    onboardingDate: '2024-02-01',
+    address: 'Business District, Andheri, Mumbai',
+    country: 'India',
+    state: 'Maharashtra',
+    city: 'Mumbai',
+    term_of_work: 'Part-time',
+    termOfWork: 'Part-time',
+    role: 'Admin Assistant',
+    department: 'Support',
+    isActive: true,
+    createdAt: '2024-02-01T00:00:00Z',
+    updatedAt: '2024-02-01T00:00:00Z'
+  },
+  {
+    id: 'demo-sub-3',
+    name: 'Mike Wilson',
+    email: 'mike.wilson@company.com',
+    phone: '+91-7654321098',
+    onboarding_date: '2024-03-10',
+    onboardingDate: '2024-03-10',
+    address: 'IT Hub, Sector 62, Noida',
+    country: 'India',
+    state: 'Uttar Pradesh',
+    city: 'Noida',
+    term_of_work: 'Contract',
+    termOfWork: 'Contract',
+    role: 'Project Coordinator',
+    department: 'Projects',
+    isActive: true,
+    createdAt: '2024-03-10T00:00:00Z',
+    updatedAt: '2024-03-10T00:00:00Z'
+  }
+];
+
 // Get sub-admin by ID
 export const getSubAdminById = async (id) => {
   try {
+    // First try to get from database
     const subAdmin = await sql`
-      SELECT 
+      SELECT
         id,
         name,
         email,
@@ -62,17 +124,37 @@ export const getSubAdminById = async (id) => {
     `;
 
     const adminData = subAdmin[0];
-    if (!adminData) return null;
 
-    // Transform dates to strings to prevent React errors
-    return {
-      ...adminData,
-      onboarding_date: adminData.onboarding_date ? new Date(adminData.onboarding_date).toISOString().split('T')[0] : '',
-      created_at: adminData.created_at ? new Date(adminData.created_at).toISOString().split('T')[0] : '',
-      updated_at: adminData.updated_at ? new Date(adminData.updated_at).toISOString().split('T')[0] : ''
-    };
+    // If found in database, return it
+    if (adminData) {
+      console.log('✅ Sub-admin found in database:', adminData);
+      return {
+        ...adminData,
+        onboarding_date: adminData.onboarding_date ? new Date(adminData.onboarding_date).toISOString().split('T')[0] : '',
+        created_at: adminData.created_at ? new Date(adminData.created_at).toISOString().split('T')[0] : '',
+        updated_at: adminData.updated_at ? new Date(adminData.updated_at).toISOString().split('T')[0] : ''
+      };
+    }
+
+    // If not found in database, check demo data
+    const demoSubAdmin = demoSubAdmins.find(s => s.id === id);
+    if (demoSubAdmin) {
+      console.log('✅ Sub-admin found in demo data:', demoSubAdmin);
+      return demoSubAdmin;
+    }
+
+    console.log('❌ Sub-admin not found:', id);
+    return null;
   } catch (error) {
     console.error('Error fetching sub-admin by ID:', error);
+
+    // Fallback to demo data if database error
+    const demoSubAdmin = demoSubAdmins.find(s => s.id === id);
+    if (demoSubAdmin) {
+      console.log('✅ Using demo sub-admin as fallback:', demoSubAdmin);
+      return demoSubAdmin;
+    }
+
     throw error;
   }
 };

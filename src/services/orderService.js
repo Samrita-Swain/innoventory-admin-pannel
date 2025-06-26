@@ -121,6 +121,79 @@ export const getAllOrders = async () => {
   }
 };
 
+// Demo orders fallback data
+const demoOrders = [
+  {
+    id: 'demo-ord-001',
+    orderReferenceNumber: 'IS-1703845200000',
+    orderOnboardingDate: '2024-06-20',
+    client: 'Acme Corporation',
+    typeOfWork: 'Patent Filing',
+    dateOfWorkCompletionExpected: '2024-07-20',
+    totalInvoiceValue: 50000,
+    totalValueGstGovtFees: 9000,
+    dateOfPaymentExpected: '2024-07-25',
+    dateOfOnboardingVendor: '2024-06-22',
+    vendorName: 'TechCorp Solutions',
+    status: 'In Progress',
+    statusHistory: JSON.stringify([
+      { status: 'Pending', date: '2024-06-20', comment: 'Order created' },
+      { status: 'In Progress', date: '2024-06-22', comment: 'Vendor assigned' }
+    ]),
+    documentsProvidedByClient: JSON.stringify([]),
+    documentsProvidedByVendor: JSON.stringify([]),
+    invoiceFromVendor: JSON.stringify([]),
+    createdAt: '2024-06-20T00:00:00Z',
+    updatedAt: '2024-06-22T00:00:00Z'
+  },
+  {
+    id: 'demo-ord-002',
+    orderReferenceNumber: 'IS-1703845260000',
+    orderOnboardingDate: '2024-06-25',
+    client: 'Global Tech Inc',
+    typeOfWork: 'Trademark Registration',
+    dateOfWorkCompletionExpected: '2024-08-25',
+    totalInvoiceValue: 35000,
+    totalValueGstGovtFees: 6300,
+    dateOfPaymentExpected: '2024-08-30',
+    dateOfOnboardingVendor: '2024-06-27',
+    vendorName: 'Global Supplies Inc',
+    status: 'Completed',
+    statusHistory: JSON.stringify([
+      { status: 'Pending', date: '2024-06-25', comment: 'Order created' },
+      { status: 'In Progress', date: '2024-06-27', comment: 'Work started' },
+      { status: 'Completed', date: '2024-08-20', comment: 'Work completed successfully' }
+    ]),
+    documentsProvidedByClient: JSON.stringify([]),
+    documentsProvidedByVendor: JSON.stringify([]),
+    invoiceFromVendor: JSON.stringify([]),
+    createdAt: '2024-06-25T00:00:00Z',
+    updatedAt: '2024-08-20T00:00:00Z'
+  },
+  {
+    id: 'demo-ord-003',
+    orderReferenceNumber: 'IS-1703845320000',
+    orderOnboardingDate: '2024-07-01',
+    client: 'StartUp Solutions',
+    typeOfWork: 'Copyright Registration',
+    dateOfWorkCompletionExpected: '2024-08-01',
+    totalInvoiceValue: 25000,
+    totalValueGstGovtFees: 4500,
+    dateOfPaymentExpected: '2024-08-05',
+    dateOfOnboardingVendor: '2024-07-03',
+    vendorName: 'TechCorp Solutions',
+    status: 'Pending',
+    statusHistory: JSON.stringify([
+      { status: 'Pending', date: '2024-07-01', comment: 'Order created' }
+    ]),
+    documentsProvidedByClient: JSON.stringify([]),
+    documentsProvidedByVendor: JSON.stringify([]),
+    invoiceFromVendor: JSON.stringify([]),
+    createdAt: '2024-07-01T00:00:00Z',
+    updatedAt: '2024-07-01T00:00:00Z'
+  }
+];
+
 // Get order by ID with full details
 export const getOrderById = async (id) => {
   try {
@@ -162,8 +235,20 @@ export const getOrderById = async (id) => {
     }
 
     const orderData = order[0];
-    if (!orderData) {
-      console.log('📝 Order not found for ID:', id);
+
+    // If found in database, return it
+    if (orderData) {
+      console.log('✅ Order found in database:', orderData);
+      // Continue with existing transformation logic...
+    } else {
+      // If not found in database, check demo data
+      const demoOrder = demoOrders.find(o => o.id === id);
+      if (demoOrder) {
+        console.log('✅ Order found in demo data:', demoOrder);
+        return demoOrder;
+      }
+
+      console.log('❌ Order not found:', id);
       return null;
     }
 
@@ -220,6 +305,13 @@ export const getOrderById = async (id) => {
   } catch (error) {
     console.error('❌ Error fetching order by ID:', error);
     console.error('Error details:', error.message, error.stack);
+
+    // Fallback to demo data if database error
+    const demoOrder = demoOrders.find(o => o.id === id);
+    if (demoOrder) {
+      console.log('✅ Using demo order as fallback:', demoOrder);
+      return demoOrder;
+    }
 
     // Return null instead of throwing error to prevent 500
     console.log('🔄 Returning null to prevent 500 error');

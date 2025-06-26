@@ -332,45 +332,31 @@ const VendorEdit = () => {
     }
   };
 
-  // Get active work types from TypeOfWork data
-  const getActiveWorkTypes = () => {
-    // This would typically come from a shared state or API
-    // For now, we'll use the same data structure as TypeOfWork page
-    const typeOfWorkData = [
-      {
-        id: 1,
-        name: 'Software Development',
-        description: 'Custom software development and programming services',
-        status: 'Active'
-      },
-      {
-        id: 2,
-        name: 'Digital Marketing',
-        description: 'SEO, social media marketing, and online advertising',
-        status: 'Active'
-      },
-      {
-        id: 3,
-        name: 'Graphic Design',
-        description: 'Logo design, branding, and visual identity services',
-        status: 'Active'
-      },
-      {
-        id: 4,
-        name: 'Content Writing',
-        description: 'Blog posts, articles, and copywriting services',
-        status: 'Inactive'
-      },
-      {
-        id: 5,
-        name: 'Data Analysis',
-        description: 'Business intelligence and data analytics services',
-        status: 'Active'
-      }
-    ];
+  // Load active work types for dropdown
+  const [activeWorkTypes, setActiveWorkTypes] = useState([]);
 
-    return typeOfWorkData.filter(workType => workType.status === 'Active');
-  };
+  useEffect(() => {
+    const loadActiveWorkTypes = async () => {
+      try {
+        console.log('🔄 Loading active work types for dropdown...');
+        const { getActiveTypeOfWork } = await import('../services/typeOfWorkService');
+        const workTypes = await getActiveTypeOfWork();
+        setActiveWorkTypes(workTypes);
+        console.log('✅ Active work types loaded:', workTypes.length);
+      } catch (error) {
+        console.error('❌ Error loading active work types:', error);
+        // Fallback to demo data
+        setActiveWorkTypes([
+          { id: 1, name: 'Software Development' },
+          { id: 2, name: 'Digital Marketing' },
+          { id: 3, name: 'Graphic Design' },
+          { id: 4, name: 'Data Analysis' }
+        ]);
+      }
+    };
+
+    loadActiveWorkTypes();
+  }, []);
 
   const availableServices = [
     'Office Supplies',
@@ -691,7 +677,7 @@ const VendorEdit = () => {
                   className="input-field"
                 >
                   <option value="">Select Type of Work</option>
-                  {getActiveWorkTypes().map(workType => (
+                  {activeWorkTypes.map(workType => (
                     <option key={workType.id} value={workType.name}>
                       {workType.name}
                     </option>
