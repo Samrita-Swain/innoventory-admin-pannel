@@ -4,9 +4,13 @@ import DataTable from '../components/DataTable/DataTable';
 
 const TypeOfWork = () => {
   const [showAddForm, setShowAddForm] = useState(false);
-  // Demo data for display (not saved to database)
   const [typeOfWorkData, setTypeOfWorkData] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [formData, setFormData] = useState({
+    name: '',
+    description: ''
+  });
+  const [editingId, setEditingId] = useState(null);
 
   const demoTypeOfWork = [
     {
@@ -73,11 +77,28 @@ const TypeOfWork = () => {
         console.log('✅ Type of work loaded:', dbTypeOfWork);
 
         console.log('✅ Type of work loaded:', dbTypeOfWork);
-        setTypeOfWorkData(dbTypeOfWork);
+
+        // If database is empty, add demo data and save to database
+        if (dbTypeOfWork && dbTypeOfWork.length === 0) {
+          console.log('📝 Database is empty, adding demo data...');
+          await addDemoDataToDatabase();
+          // Reload data after adding demo data
+          const updatedData = await getAllTypeOfWork();
+          setTypeOfWorkData(updatedData);
+        } else {
+          setTypeOfWorkData(dbTypeOfWork);
+        }
       } catch (err) {
         console.error('❌ Error loading type of work:', err);
         // Fallback to demo data if database fails
+        console.log('🔄 Using demo data as fallback and attempting to save to database');
         setTypeOfWorkData(demoTypeOfWork);
+        // Try to save demo data to database in background
+        try {
+          await addDemoDataToDatabase();
+        } catch (saveError) {
+          console.log('⚠️ Could not save demo data to database:', saveError.message);
+        }
       } finally {
         setLoading(false);
       }
@@ -85,6 +106,100 @@ const TypeOfWork = () => {
 
     loadTypeOfWork();
   }, []);
+
+  // Add demo data to database
+  const addDemoDataToDatabase = async () => {
+    try {
+      console.log('💾 Saving demo data to database...');
+      const { createTypeOfWork } = await import('../services/typeOfWorkService');
+
+      for (const work of demoTypeOfWork) {
+        try {
+          await createTypeOfWork({
+            name: work.name,
+            description: work.description
+          });
+          console.log(`✅ Saved to database: ${work.name}`);
+        } catch (saveError) {
+          console.log(`⚠️ Could not save ${work.name}:`, saveError.message);
+        }
+      }
+      console.log('✅ Demo data saved to database successfully!');
+    } catch (error) {
+      console.log('❌ Error saving demo data:', error.message);
+      throw error;
+    }
+  };
+
+  // Handle form submission
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      setLoading(true);
+
+      if (editingId) {
+        // Update existing type of work
+        const { updateTypeOfWork } = await import('../services/typeOfWorkService');
+        await updateTypeOfWork(editingId, formData);
+        console.log('✅ Type of work updated successfully');
+      } else {
+        // Create new type of work
+        const { createTypeOfWork } = await import('../services/typeOfWorkService');
+        await createTypeOfWork(formData);
+        console.log('✅ Type of work created successfully');
+      }
+
+      // Reset form and reload data
+      setFormData({ name: '', description: '' });
+      setShowAddForm(false);
+      setEditingId(null);
+      await loadTypeOfWork();
+    } catch (error) {
+      console.error('❌ Error saving type of work:', error);
+      alert('Error saving type of work: ' + error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Handle status toggle
+  const handleStatusToggle = async (id, currentStatus) => {
+    try {
+      const newStatus = currentStatus === 'Active' ? 'Inactive' : 'Active';
+      const { updateTypeOfWorkStatus } = await import('../services/typeOfWorkService');
+      await updateTypeOfWorkStatus(id, newStatus);
+      console.log(`✅ Status updated to ${newStatus}`);
+      await loadTypeOfWork();
+    } catch (error) {
+      console.error('❌ Error updating status:', error);
+      alert('Error updating status: ' + error.message);
+    }
+  };
+
+  // Handle delete
+  const handleDelete = async (id) => {
+    if (confirm('Are you sure you want to delete this type of work?')) {
+      try {
+        const { deleteTypeOfWork } = await import('../services/typeOfWorkService');
+        await deleteTypeOfWork(id);
+        console.log('✅ Type of work deleted successfully');
+        await loadTypeOfWork();
+      } catch (error) {
+        console.error('❌ Error deleting type of work:', error);
+        alert('Error deleting type of work: ' + error.message);
+      }
+    }
+  };
+
+  // Handle edit
+  const handleEdit = (item) => {
+    setFormData({
+      name: item.name,
+      description: item.description
+    });
+    setEditingId(item.id);
+    setShowAddForm(true);
+  };
 
   const columns = [
     {
@@ -133,14 +248,14 @@ const TypeOfWork = () => {
       render: (_, row) => (
         <div className="flex space-x-2">
           <button
-            onClick={() => handleEdit(row.id)}
+            onClick={() => handleEdit(row)}
             className="text-blue-600 hover:text-blue-800"
             title="Edit"
           >
             <PencilIcon className="h-4 w-4" />
           </button>
           <button
-            onClick={() => handleToggleStatus(row.id, row.status)}
+            onClick={() => handleStatusToggle(row.id, row.status)}
             className={`${
               row.status === 'Active'
                 ? 'text-green-600 hover:text-green-800'
@@ -166,60 +281,6 @@ const TypeOfWork = () => {
     }
   ];
 
-  const handleEdit = (id) => {
-    console.log('Edit type of work:', id);
-    // Implementation for edit functionality
-  };
-
-  const handleToggleStatus = async (id, currentStatus) => {
-    try {
-      const newStatus = currentStatus === 'Active' ? 'Inactive' : 'Active';
-      console.log(`🔄 Toggling status for type of work ${id} to ${newStatus}...`);
-
-      // Import and use database service
-      const { updateTypeOfWorkStatus } = await import('../services/database');
-      await updateTypeOfWorkStatus(id, newStatus);
-
-      // Update local state
-      setTypeOfWorkData(prevData =>
-        prevData.map(item =>
-          item.id === id
-            ? { ...item, status: newStatus }
-            : item
-        )
-      );
-
-      console.log(`✅ Type of work status updated to ${newStatus}`);
-      alert(`Type of work status updated to ${newStatus}`);
-    } catch (error) {
-      console.error('❌ Error updating type of work status:', error);
-      alert('Failed to update type of work status');
-    }
-  };
-
-  const handleDelete = async (id) => {
-    if (!confirm('Are you sure you want to delete this type of work? This action cannot be undone.')) {
-      return;
-    }
-
-    try {
-      console.log(`🔄 Deleting type of work ${id}...`);
-
-      // Import and use database service
-      const { deleteTypeOfWork } = await import('../services/database');
-      await deleteTypeOfWork(id);
-
-      // Update local state
-      setTypeOfWorkData(prevData => prevData.filter(item => item.id !== id));
-
-      console.log('✅ Type of work deleted successfully');
-      alert('Type of work deleted successfully');
-    } catch (error) {
-      console.error('❌ Error deleting type of work:', error);
-      alert('Failed to delete type of work');
-    }
-  };
-
   return (
     <div className="space-y-6">
       {/* Page Header */}
@@ -228,13 +289,22 @@ const TypeOfWork = () => {
           <h1 className="text-3xl font-bold text-gray-900">Type of Work</h1>
           <p className="mt-2 text-gray-600">Manage different types of work and services</p>
         </div>
-        <button
-          onClick={() => setShowAddForm(true)}
-          className="btn-primary flex items-center"
-        >
-          <PlusIcon className="h-5 w-5 mr-2" />
-          Add New Work Type
-        </button>
+        <div className="flex space-x-3">
+          <button
+            onClick={addDemoDataToDatabase}
+            className="btn-secondary flex items-center"
+            title="Save demo data to database"
+          >
+            💾 Save Demo Data
+          </button>
+          <button
+            onClick={() => setShowAddForm(true)}
+            className="btn-primary flex items-center"
+          >
+            <PlusIcon className="h-5 w-5 mr-2" />
+            Add New Work Type
+          </button>
+        </div>
       </div>
 
       {/* Data Table */}
@@ -248,27 +318,76 @@ const TypeOfWork = () => {
         />
       </div>
 
-      {/* Add Form Modal - Placeholder */}
+      {/* Add/Edit Form Modal */}
       {showAddForm && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
           <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
             <div className="mt-3">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">Add New Work Type</h3>
-              <p className="text-gray-600 mb-4">Form implementation coming soon...</p>
-              <div className="flex justify-end space-x-3">
-                <button
-                  onClick={() => setShowAddForm(false)}
-                  className="btn-secondary"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={() => setShowAddForm(false)}
-                  className="btn-primary"
-                >
-                  Save
-                </button>
-              </div>
+              <h3 className="text-lg font-medium text-gray-900 mb-4">
+                {editingId ? 'Edit Work Type' : 'Add New Work Type'}
+              </h3>
+
+              <form onSubmit={handleSubmit} className="space-y-4">
+                {/* Work Type Name */}
+                <div>
+                  <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
+                    Work Type Name *
+                  </label>
+                  <input
+                    type="text"
+                    id="name"
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Enter work type name"
+                    required
+                  />
+                </div>
+
+                {/* Description */}
+                <div>
+                  <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
+                    Description *
+                  </label>
+                  <textarea
+                    id="description"
+                    value={formData.description}
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    rows={3}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Enter description"
+                    required
+                  />
+                </div>
+
+                {/* Created Date Info */}
+                <div className="text-sm text-gray-500">
+                  <p>Created Date: {new Date().toLocaleDateString()} (Auto-generated)</p>
+                  <p>Status: Active (Default)</p>
+                </div>
+
+                {/* Form Actions */}
+                <div className="flex justify-end space-x-3 pt-4">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowAddForm(false);
+                      setEditingId(null);
+                      setFormData({ name: '', description: '' });
+                    }}
+                    className="btn-secondary"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="btn-primary disabled:opacity-50"
+                  >
+                    {loading ? 'Saving...' : (editingId ? 'Update' : 'Save')}
+                  </button>
+                </div>
+              </form>
             </div>
           </div>
         </div>

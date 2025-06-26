@@ -101,16 +101,137 @@ const Vendors = () => {
       console.log('✅ Vendors loaded:', dbVendors.length, 'records');
 
       console.log('✅ Vendors loaded:', dbVendors.length, 'records');
-      setVendorsList(dbVendors);
+
+      // If database is empty, add demo data and save to database
+      if (dbVendors && dbVendors.length === 0) {
+        console.log('📝 Database is empty, adding demo vendors...');
+        setVendorsList(demoVendors);
+        // Try to save demo data to database in background
+        try {
+          await addDemoVendorsToDatabase();
+        } catch (saveError) {
+          console.log('⚠️ Could not save demo vendors to database:', saveError.message);
+        }
+      } else {
+        setVendorsList(dbVendors);
+      }
       setError(null);
     } catch (err) {
       console.error('❌ Database connection failed:', err);
       console.error('❌ Error details:', err.message);
       setError('Failed to load vendors from database: ' + err.message);
       // Fallback to demo data
+      console.log('🔄 Using demo vendors as fallback and attempting to save to database');
       setVendorsList(demoVendors);
+      // Try to save demo data to database in background
+      try {
+        await addDemoVendorsToDatabase();
+      } catch (saveError) {
+        console.log('⚠️ Could not save demo vendors to database:', saveError.message);
+      }
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Add demo vendors to database
+  const addDemoVendorsToDatabase = async () => {
+    try {
+      console.log('💾 Saving demo vendors to database...');
+
+      // First ensure the vendors table exists
+      try {
+        const { sql } = await import('../config/database');
+        await sql`
+          CREATE TABLE IF NOT EXISTS vendors (
+            id TEXT PRIMARY KEY DEFAULT ('vendor-' || lower(hex(randomblob(8)))),
+            name TEXT NOT NULL,
+            company TEXT NOT NULL,
+            "companyName" TEXT,
+            "companyType" TEXT,
+            "onboardingDate" DATE,
+            email TEXT,
+            phone TEXT,
+            address TEXT,
+            country TEXT,
+            state TEXT,
+            city TEXT,
+            username TEXT,
+            "gstNumber" TEXT,
+            specialization TEXT,
+            "typeOfWork" TEXT,
+            "isActive" BOOLEAN DEFAULT TRUE,
+            rating DECIMAL(3,2) DEFAULT 0.00,
+            "totalOrders" INTEGER DEFAULT 0,
+            "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            "updatedAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            "createdById" TEXT
+          )
+        `;
+        console.log('✅ Vendors table ready');
+      } catch (tableError) {
+        console.log('⚠️ Table creation issue:', tableError.message);
+      }
+
+      // Try using the vendor service first
+      try {
+        const { createVendor } = await import('../services/vendorService');
+
+        for (const vendor of demoVendors) {
+          try {
+            await createVendor({
+              companyName: vendor.company_name,
+              companyType: vendor.company_type,
+              onboardingDate: vendor.onboarding_date,
+              emails: vendor.emails,
+              phones: vendor.phones,
+              address: vendor.address,
+              country: vendor.country,
+              state: vendor.state,
+              city: vendor.city,
+              username: vendor.username,
+              gstNumber: vendor.gst_number,
+              description: vendor.description,
+              services: vendor.services,
+              website: vendor.website,
+              typeOfWork: vendor.type_of_work,
+              status: vendor.status
+            });
+            console.log(`✅ Saved vendor to database: ${vendor.company_name}`);
+          } catch (saveError) {
+            console.log(`⚠️ Could not save vendor ${vendor.company_name}:`, saveError.message);
+          }
+        }
+      } catch (serviceError) {
+        console.log('⚠️ Vendor service failed, trying direct database insertion...');
+
+        // Fallback: Direct database insertion
+        const { sql } = await import('../config/database');
+        for (const vendor of demoVendors) {
+          try {
+            await sql`
+              INSERT INTO vendors (
+                name, company, "companyName", "companyType", "onboardingDate",
+                email, phone, address, country, state, city, username, "gstNumber",
+                specialization, "typeOfWork", "isActive", rating, "totalOrders"
+              ) VALUES (
+                ${vendor.company_name}, ${vendor.company_name}, ${vendor.company_name},
+                ${vendor.company_type}, ${vendor.onboarding_date}, ${vendor.emails[0] || ''},
+                ${vendor.phones[0] || ''}, ${vendor.address}, ${vendor.country},
+                ${vendor.state}, ${vendor.city}, ${vendor.username}, ${vendor.gst_number},
+                ${vendor.description}, ${vendor.type_of_work}, ${vendor.status === 'Active'},
+                ${vendor.rating || 0}, ${vendor.total_orders || 0}
+              )
+            `;
+            console.log(`✅ Direct insert successful: ${vendor.company_name}`);
+          } catch (directError) {
+            console.log(`⚠️ Direct insert failed for ${vendor.company_name}:`, directError.message);
+          }
+        }
+      }
+      console.log('✅ Demo vendors saved to database successfully!');
+    } catch (error) {
+      console.log('❌ Error saving demo vendors:', error.message);
     }
   };
 
@@ -503,13 +624,22 @@ const Vendors = () => {
           <h1 className="text-3xl font-bold text-gray-900">Vendors</h1>
           <p className="mt-2 text-gray-600">Manage your vendor network</p>
         </div>
-        <button
-          onClick={() => setShowAddForm(true)}
-          className="btn-primary flex items-center"
-        >
-          <PlusIcon className="h-5 w-5 mr-2" />
-          Add New Vendor
-        </button>
+        <div className="flex space-x-3">
+          <button
+            onClick={addDemoVendorsToDatabase}
+            className="btn-secondary flex items-center"
+            title="Save demo data to database"
+          >
+            💾 Save Demo Data
+          </button>
+          <button
+            onClick={() => setShowAddForm(true)}
+            className="btn-primary flex items-center"
+          >
+            <PlusIcon className="h-5 w-5 mr-2" />
+            Add New Vendor
+          </button>
+        </div>
       </div>
 
       {/* Vendors Table */}

@@ -202,7 +202,7 @@ const Orders = () => {
     const loadActiveWorkTypes = async () => {
       try {
         console.log('🔄 Loading active work types for dropdown...');
-        const { getActiveTypeOfWork } = await import('../services/database');
+        const { getActiveTypeOfWork } = await import('../services/typeOfWorkService');
         const workTypes = await getActiveTypeOfWork();
         setActiveWorkTypes(workTypes);
         console.log('✅ Active work types loaded:', workTypes.length);
