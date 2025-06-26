@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
-import { PlusIcon, PencilIcon, TrashIcon, CheckCircleIcon, XCircleIcon } from '@heroicons/react/24/outline';
+import { useNavigate } from 'react-router-dom';
+import { PlusIcon, PencilIcon, TrashIcon, CheckCircleIcon, XCircleIcon, EyeIcon } from '@heroicons/react/24/outline';
 import DataTable from '../components/DataTable/DataTable';
 
 const TypeOfWork = () => {
+  const navigate = useNavigate();
   const [showAddForm, setShowAddForm] = useState(false);
   const [typeOfWorkData, setTypeOfWorkData] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -248,7 +250,14 @@ const TypeOfWork = () => {
       render: (_, row) => (
         <div className="flex space-x-2">
           <button
-            onClick={() => handleEdit(row)}
+            onClick={() => navigate(`/type-of-work/view/${row.id}`)}
+            className="text-gray-600 hover:text-gray-800"
+            title="View"
+          >
+            <EyeIcon className="h-4 w-4" />
+          </button>
+          <button
+            onClick={() => navigate(`/type-of-work/edit/${row.id}`)}
             className="text-blue-600 hover:text-blue-800"
             title="Edit"
           >

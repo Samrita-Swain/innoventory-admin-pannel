@@ -7,6 +7,8 @@ import Dashboard from './pages/Dashboard';
 import Vendors from './pages/Vendors';
 import Clients from './pages/Clients';
 import TypeOfWork from './pages/TypeOfWork';
+import TypeOfWorkView from './pages/TypeOfWorkView';
+import TypeOfWorkEdit from './pages/TypeOfWorkEdit';
 import Orders from './pages/Orders';
 import Audit from './pages/Audit';
 import SubAdmins from './pages/SubAdmins';
@@ -119,6 +121,8 @@ function App() {
         <Route path="/clients/:id" element={<Layout><ClientView /></Layout>} />
         <Route path="/clients/:id/edit" element={<Layout><ClientEdit /></Layout>} />
         <Route path="/type-of-work" element={<Layout><TypeOfWork /></Layout>} />
+        <Route path="/type-of-work/view/:id" element={<Layout><TypeOfWorkView /></Layout>} />
+        <Route path="/type-of-work/edit/:id" element={<Layout><TypeOfWorkEdit /></Layout>} />
         <Route path="/orders" element={<Layout><Orders /></Layout>} />
         <Route path="/orders/:id" element={<Layout><OrderView /></Layout>} />
         <Route path="/orders/:id/edit" element={<Layout><OrderEdit /></Layout>} />

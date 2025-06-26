@@ -51,9 +51,76 @@ export const getAllVendors = async () => {
   }
 };
 
+// Demo vendors fallback data
+const demoVendors = [
+  {
+    id: 'demo-vendor-1',
+    company_name: 'TechCorp Solutions',
+    companyName: 'TechCorp Solutions',
+    company_type: 'Pvt. Company',
+    companyType: 'Pvt. Company',
+    onboarding_date: '2024-01-15',
+    onboardingDate: '2024-01-15',
+    emails: ['contact@techcorp.com'],
+    email: 'contact@techcorp.com',
+    phones: ['+91-9876543210'],
+    phone: '+91-9876543210',
+    address: 'Tech Park, Whitefield, Bangalore',
+    country: 'India',
+    state: 'Karnataka',
+    city: 'Bangalore',
+    username: 'techcorp_admin',
+    gstNumber: '29ABCDE1234F1Z5',
+    gst_number: '29ABCDE1234F1Z5',
+    specialization: 'Software Development and IT Services',
+    description: 'Software Development and IT Services',
+    typeOfWork: 'Technology Services',
+    type_of_work: 'Technology Services',
+    website: 'https://techcorp.com',
+    isActive: true,
+    rating: 4.8,
+    totalOrders: 25,
+    total_orders: 25,
+    createdAt: '2024-01-15T00:00:00Z',
+    updatedAt: '2024-01-15T00:00:00Z'
+  },
+  {
+    id: 'demo-vendor-2',
+    company_name: 'Global Supplies Inc',
+    companyName: 'Global Supplies Inc',
+    company_type: 'MSME',
+    companyType: 'MSME',
+    onboarding_date: '2024-02-20',
+    onboardingDate: '2024-02-20',
+    emails: ['info@globalsupplies.com'],
+    email: 'info@globalsupplies.com',
+    phones: ['+91-8765432109'],
+    phone: '+91-8765432109',
+    address: 'Industrial Area, Andheri, Mumbai',
+    country: 'India',
+    state: 'Maharashtra',
+    city: 'Mumbai',
+    username: 'global_supplies',
+    gstNumber: '27FGHIJ5678K2L9',
+    gst_number: '27FGHIJ5678K2L9',
+    specialization: 'Office supplies and equipment distribution',
+    description: 'Office supplies and equipment distribution',
+    typeOfWork: 'Office Supplies',
+    type_of_work: 'Office Supplies',
+    website: 'https://globalsupplies.com',
+    isActive: true,
+    rating: 4.2,
+    totalOrders: 18,
+    total_orders: 18,
+    createdAt: '2024-02-20T00:00:00Z',
+    updatedAt: '2024-02-20T00:00:00Z'
+  }
+];
+
 // Get vendor by ID
 export const getVendorById = async (id) => {
   try {
+    // First try to get from database
     const vendor = await sql`
       SELECT
         id,
@@ -81,26 +148,32 @@ export const getVendorById = async (id) => {
     `;
 
     const vendorData = vendor[0];
-    if (!vendorData) return null;
 
-    // Transform data to match UI expectations and format dates
-    return {
-      ...vendorData,
-      // Map database fields to UI expected fields
-      company_name: vendorData.companyName || vendorData.company || vendorData.name || 'N/A',
-      emails: vendorData.email ? [vendorData.email] : [],
-      phones: vendorData.phone ? [vendorData.phone] : [],
-      company_type: vendorData.companyType || 'N/A',
-      type_of_work: Array.isArray(vendorData.typeOfWork) ? vendorData.typeOfWork.join(', ') : (vendorData.specialization || 'N/A'),
-      status: vendorData.isActive ? 'Active' : 'Inactive',
-      totalOrders: vendorData.totalOrders || 0,
-      // Format dates to strings to prevent React errors
-      onboardingDate: vendorData.onboardingDate ? new Date(vendorData.onboardingDate).toISOString().split('T')[0] : '',
-      createdAt: vendorData.createdAt ? new Date(vendorData.createdAt).toISOString().split('T')[0] : '',
-      updatedAt: vendorData.updatedAt ? new Date(vendorData.updatedAt).toISOString().split('T')[0] : ''
-    };
+    // If found in database, return it
+    if (vendorData) {
+      console.log('✅ Vendor found in database:', vendorData);
+      return vendorData;
+    }
+
+    // If not found in database, check demo data
+    const demoVendor = demoVendors.find(v => v.id === id);
+    if (demoVendor) {
+      console.log('✅ Vendor found in demo data:', demoVendor);
+      return demoVendor;
+    }
+
+    console.log('❌ Vendor not found:', id);
+    return null;
   } catch (error) {
     console.error('Error fetching vendor by ID:', error);
+
+    // Fallback to demo data if database error
+    const demoVendor = demoVendors.find(v => v.id === id);
+    if (demoVendor) {
+      console.log('✅ Using demo vendor as fallback:', demoVendor);
+      return demoVendor;
+    }
+
     throw error;
   }
 };
