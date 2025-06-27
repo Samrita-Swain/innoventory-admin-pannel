@@ -652,44 +652,6 @@ const Orders = () => {
           <p className="mt-2 text-gray-600">Track and manage all orders</p>
         </div>
         <div className="flex space-x-2">
-          {process.env.NODE_ENV === 'development' && (
-            <>
-              <button
-                onClick={() => window.location.reload()}
-                className="btn-secondary flex items-center"
-              >
-                🔄 Refresh Page
-              </button>
-              <button
-                onClick={async () => {
-                  try {
-                    const { refreshDatabaseData } = await import('../config/database');
-                    await refreshDatabaseData();
-                    window.location.reload();
-                  } catch (error) {
-                    console.error('Error refreshing database:', error);
-                    alert('Error refreshing database: ' + error.message);
-                  }
-                }}
-                className="btn-secondary flex items-center"
-              >
-                🗄️ Refresh DB
-              </button>
-              <button
-                onClick={manualRefreshOrders}
-                className="btn-secondary flex items-center"
-              >
-                🔄 Test Orders
-              </button>
-            </>
-          )}
-          <button
-            onClick={addDemoOrdersToDatabase}
-            className="btn-secondary flex items-center"
-            title="Save demo data to database"
-          >
-            💾 Save Demo Data
-          </button>
           <button
             onClick={() => setShowAddForm(true)}
             className="btn-primary flex items-center"

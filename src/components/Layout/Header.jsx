@@ -1,4 +1,4 @@
-import { Bars3Icon, BellIcon, UserCircleIcon } from '@heroicons/react/24/outline';
+import { Bars3Icon, UserCircleIcon } from '@heroicons/react/24/outline';
 
 const Header = ({ onMenuClick }) => {
   return (
@@ -22,19 +22,8 @@ const Header = ({ onMenuClick }) => {
           </div>
         </div>
 
-        {/* Right side - User menu and notifications */}
+        {/* Right side - User menu */}
         <div className="flex items-center space-x-2 sm:space-x-4">
-          {/* Notifications */}
-          <div className="relative">
-            <button className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-xl transition-all duration-200 hover:scale-105 group">
-              <BellIcon className="h-6 w-6" />
-              {/* Notification badge */}
-              <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full flex items-center justify-center">
-                <span className="text-xs text-white font-bold">3</span>
-              </div>
-            </button>
-          </div>
-
           {/* User menu */}
           <div className="flex items-center space-x-3 group">
             <div className="text-right hidden sm:block">

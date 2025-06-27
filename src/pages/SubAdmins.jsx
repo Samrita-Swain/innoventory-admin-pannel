@@ -455,13 +455,6 @@ const SubAdmins = () => {
         </div>
         <div className="flex space-x-3">
           <button
-            onClick={addDemoSubAdminsToDatabase}
-            className="btn-secondary flex items-center"
-            title="Save demo data to database"
-          >
-            💾 Save Demo Data
-          </button>
-          <button
             onClick={() => setShowAddForm(true)}
             className="btn-primary flex items-center"
           >

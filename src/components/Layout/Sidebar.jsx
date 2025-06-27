@@ -33,14 +33,12 @@ const Sidebar = ({ isOpen, onClose }) => {
           <div className="flex flex-col flex-grow bg-gradient-to-b from-white to-gray-50 border-r border-gray-200 pt-5 pb-4 overflow-y-auto shadow-sm">
             {/* Logo */}
             <div className="flex items-center flex-shrink-0 px-4 mb-8">
-              <div className="flex items-center group">
-                <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-blue-700 rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all duration-300 group-hover:scale-105">
-                  <span className="text-white font-bold text-lg">I</span>
-                </div>
-                <div className="ml-3">
-                  <span className="text-xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">Innoventory</span>
-                  <p className="text-xs text-gray-500 font-medium">Admin Panel</p>
-                </div>
+              <div className="w-full">
+                <img
+                  src="/innoventorysologo.png"
+                  alt="Innoventory Logo"
+                  className="h-16 w-full object-contain"
+                />
               </div>
             </div>
 
@@ -98,11 +96,12 @@ const Sidebar = ({ isOpen, onClose }) => {
         <div className="flex flex-col h-full">
           {/* Header with close button */}
           <div className="flex items-center justify-between p-4 border-b border-gray-200">
-            <div className="flex items-center">
-              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-lg">I</span>
-              </div>
-              <span className="ml-3 text-xl font-bold text-gray-900">Innoventory</span>
+            <div className="flex items-center flex-1 mr-4">
+              <img
+                src="/innoventorysologo.png"
+                alt="Innoventory Logo"
+                className="h-12 w-full object-contain"
+              />
             </div>
             <button
               onClick={onClose}
@@ -111,7 +110,7 @@ const Sidebar = ({ isOpen, onClose }) => {
               <XMarkIcon className="h-6 w-6" />
             </button>
           </div>
-          
+
           {/* Navigation */}
           <nav className="flex-1 px-2 py-4 space-y-1">
             {navigation.map((item) => {
