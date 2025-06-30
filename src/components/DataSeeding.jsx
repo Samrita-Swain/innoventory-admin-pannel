@@ -93,6 +93,9 @@ const DataSeeding = () => {
         case 'subAdmins':
           result = await SeedingAPI.seedSubAdminsOnly();
           break;
+        case 'orders':
+          result = await SeedingAPI.seedOrdersOnly();
+          break;
         default:
           throw new Error('Unknown category');
       }
@@ -140,7 +143,7 @@ const DataSeeding = () => {
       </div>
 
       {/* Status Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
         {status && (
           <>
             <div className="bg-blue-50 p-4 rounded-lg">
@@ -158,6 +161,10 @@ const DataSeeding = () => {
             <div className="bg-orange-50 p-4 rounded-lg">
               <h3 className="font-semibold text-orange-900">Sub Admins</h3>
               <p className="text-2xl font-bold text-orange-600">{status.subAdmins}</p>
+            </div>
+            <div className="bg-indigo-50 p-4 rounded-lg">
+              <h3 className="font-semibold text-indigo-900">Orders</h3>
+              <p className="text-2xl font-bold text-indigo-600">{status.orders}</p>
             </div>
           </>
         )}
@@ -208,7 +215,7 @@ const DataSeeding = () => {
       {/* Individual Category Seeding */}
       <div className="mb-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-3">Seed Individual Categories</h3>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
           <button
             onClick={() => handleSeedCategory('vendors')}
             disabled={loading}
@@ -236,6 +243,13 @@ const DataSeeding = () => {
             className="bg-orange-100 hover:bg-orange-200 disabled:bg-gray-100 text-orange-800 px-3 py-2 rounded font-medium transition-colors"
           >
             👨‍💼 Sub Admins
+          </button>
+          <button
+            onClick={() => handleSeedCategory('orders')}
+            disabled={loading}
+            className="bg-indigo-100 hover:bg-indigo-200 disabled:bg-gray-100 text-indigo-800 px-3 py-2 rounded font-medium transition-colors"
+          >
+            📋 Orders
           </button>
         </div>
       </div>

@@ -8,6 +8,7 @@ import {
   GlobeAltIcon
 } from '@heroicons/react/24/outline';
 import DataSeeding from '../components/DataSeeding';
+import PrismaDataSeeding from '../components/PrismaDataSeeding';
 
 const Settings = () => {
   const [activeTab, setActiveTab] = useState('general');
@@ -276,7 +277,28 @@ const Settings = () => {
               <h3 className="text-lg font-medium text-gray-900 mb-2">Database Management</h3>
               <p className="text-gray-600">Manage database seeding, backups, and maintenance operations.</p>
             </div>
-            <DataSeeding />
+
+            {/* Prisma-based Seeding (Recommended) */}
+            <div className="mb-8">
+              <h4 className="text-md font-medium text-gray-900 mb-2">
+                🚀 Prisma Seeding (Recommended)
+              </h4>
+              <p className="text-gray-600 mb-4">
+                Clean, reliable seeding using Prisma ORM with proper type safety and error handling.
+              </p>
+              <PrismaDataSeeding />
+            </div>
+
+            {/* Legacy Seeding */}
+            <div className="border-t pt-6">
+              <h4 className="text-md font-medium text-gray-900 mb-2">
+                ⚠️ Legacy Seeding (For Reference)
+              </h4>
+              <p className="text-gray-600 mb-4">
+                Original seeding implementation. Use Prisma seeding above for better reliability.
+              </p>
+              <DataSeeding />
+            </div>
           </div>
         );
 

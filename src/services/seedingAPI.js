@@ -2,14 +2,15 @@
  * Seeding API Service - Frontend interface for data seeding operations
  */
 
-import { 
-  seedAllData, 
-  seedVendors, 
-  seedClients, 
-  seedTypeOfWork, 
+import {
+  seedAllData,
+  seedVendors,
+  seedClients,
+  seedTypeOfWork,
   seedSubAdmins,
+  seedOrders,
   getSeedingStatus,
-  clearSeededData 
+  clearSeededData
 } from './seedService.js';
 
 /**
@@ -124,7 +125,7 @@ export class SeedingAPI {
     try {
       console.log('👨‍💼 API: Seeding sub-admins...');
       const success = await seedSubAdmins();
-      
+
       return {
         success,
         message: success ? 'Sub-admins seeded successfully' : 'Failed to seed sub-admins',
@@ -136,6 +137,31 @@ export class SeedingAPI {
       return {
         success: false,
         message: `Sub-admin seeding failed: ${error.message}`,
+        error: error.message,
+        timestamp: new Date().toISOString()
+      };
+    }
+  }
+
+  /**
+   * Seed orders only
+   */
+  static async seedOrdersOnly() {
+    try {
+      console.log('📋 API: Seeding orders...');
+      const success = await seedOrders();
+
+      return {
+        success,
+        message: success ? 'Orders seeded successfully' : 'Failed to seed orders',
+        category: 'orders',
+        timestamp: new Date().toISOString()
+      };
+    } catch (error) {
+      console.error('❌ API: Error seeding orders:', error);
+      return {
+        success: false,
+        message: `Order seeding failed: ${error.message}`,
         error: error.message,
         timestamp: new Date().toISOString()
       };
@@ -214,9 +240,9 @@ export class SeedingAPI {
         };
       }
 
-      // Consider seeding needed if any category has less than 2 records
-      const needsSeeding = status.vendors < 2 || status.clients < 2 || 
-                          status.typeOfWork < 3 || status.subAdmins < 1;
+      // Consider seeding needed if any category has less than recommended records
+      const needsSeeding = status.vendors < 3 || status.clients < 3 ||
+                          status.typeOfWork < 5 || status.subAdmins < 2 || status.orders < 2;
 
       return {
         success: true,
@@ -224,10 +250,11 @@ export class SeedingAPI {
         message: needsSeeding ? 'Database needs seeding' : 'Database has sufficient data',
         currentCounts: status,
         recommendations: needsSeeding ? [
-          status.vendors < 2 ? 'Add more vendors' : null,
-          status.clients < 2 ? 'Add more clients' : null,
-          status.typeOfWork < 3 ? 'Add more work types' : null,
-          status.subAdmins < 1 ? 'Add sub-admins' : null
+          status.vendors < 3 ? 'Add more vendors' : null,
+          status.clients < 3 ? 'Add more clients' : null,
+          status.typeOfWork < 5 ? 'Add more work types' : null,
+          status.subAdmins < 2 ? 'Add sub-admins' : null,
+          status.orders < 2 ? 'Add sample orders' : null
         ].filter(Boolean) : [],
         timestamp: new Date().toISOString()
       };
@@ -264,21 +291,25 @@ export class SeedingAPI {
 
       // Perform targeted seeding based on what's needed
       const results = {};
-      
-      if (check.currentCounts.vendors < 2) {
+
+      if (check.currentCounts.vendors < 3) {
         results.vendors = await seedVendors();
       }
-      
-      if (check.currentCounts.clients < 2) {
+
+      if (check.currentCounts.clients < 3) {
         results.clients = await seedClients();
       }
-      
-      if (check.currentCounts.typeOfWork < 3) {
+
+      if (check.currentCounts.typeOfWork < 5) {
         results.typeOfWork = await seedTypeOfWork();
       }
-      
-      if (check.currentCounts.subAdmins < 1) {
+
+      if (check.currentCounts.subAdmins < 2) {
         results.subAdmins = await seedSubAdmins();
+      }
+
+      if (check.currentCounts.orders < 2) {
+        results.orders = await seedOrders();
       }
 
       const successCount = Object.values(results).filter(Boolean).length;

@@ -1,0 +1,197 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Enums
+enum OrderType {
+  DEVELOPMENT
+  MARKETING
+  DESIGN
+  CONSULTING
+  LEGAL
+}
+
+enum OrderStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  ON_HOLD
+}
+
+enum OrderPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum UserRole {
+  ADMIN
+  SUB_ADMIN
+  USER
+}
+
+// Models
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  role      UserRole @default(USER)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  createdVendors Vendor[]
+  assignedOrders Order[]
+
+  @@map("users")
+}
+
+model Vendor {
+  id             String    @id @default(cuid())
+  name           String
+  email          String    @unique
+  phone          String?
+  company        String
+  country        String
+  address        String?
+  specialization String?
+  onboardingDate DateTime?
+  companyType    String?
+  companyName    String?
+  individualName String?
+  city           String?
+  state          String?
+  username       String?
+  gstNumber      String?
+  startupBenefits String?
+  typeOfWork     String[]
+  pointsOfContact String?
+  gstFileUrl     String?
+  ndaFileUrl     String?
+  agreementFileUrl String?
+  companyLogoUrl String?
+  otherDocsUrls  String[]
+  isActive       Boolean   @default(true)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  createdById    String
+  rating         Float?
+
+  // Relations
+  createdBy User    @relation(fields: [createdById], references: [id])
+  orders    Order[]
+
+  @@map("vendors")
+}
+
+model Customer {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  phone     String?
+  company   String?
+  country   String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  orders Order[]
+
+  @@map("customers")
+}
+
+model Client {
+  id               Int      @id @default(autoincrement())
+  companyName      String   @map("company_name")
+  companyType      String?  @map("company_type")
+  onboardingDate   DateTime? @map("onboarding_date")
+  emails           Json?
+  phones           Json?
+  address          String?
+  country          String?
+  state            String?
+  city             String?
+  dpiitRegistered  Boolean? @default(false) @map("dpiit_registered")
+  dpiitNumber      String?  @map("dpiit_number")
+  files            Json?
+  status           String?
+  createdAt        DateTime? @default(now()) @map("created_at")
+  updatedAt        DateTime? @updatedAt @map("updated_at")
+
+  @@map("clients")
+}
+
+model Order {
+  id            String        @id @default(cuid())
+  referenceNumber String      @unique
+  title         String
+  description   String?
+  type          OrderType
+  status        OrderStatus
+  country       String
+  priority      OrderPriority
+  startDate     DateTime?
+  dueDate       DateTime?
+  completedDate DateTime?
+  amount        Float?
+  paidAmount    Float         @default(0)
+  currency      String        @default("USD")
+  customerId    String
+  vendorId      String?
+  assignedToId  String
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  // Relations
+  customer   Customer @relation(fields: [customerId], references: [id])
+  vendor     Vendor?  @relation(fields: [vendorId], references: [id])
+  assignedTo User     @relation(fields: [assignedToId], references: [id])
+
+  @@map("orders")
+}
+
+model SubAdmin {
+  id             Int       @id @default(autoincrement())
+  name           String
+  email          String    @unique
+  onboardingDate DateTime? @map("onboarding_date")
+  address        String?
+  country        String?
+  state          String?
+  city           String?
+  username       String?
+  panNumber      String?   @map("pan_number")
+  termOfWork     String?   @map("term_of_work")
+  files          Json?
+  status         String?
+  createdAt      DateTime? @default(now()) @map("created_at")
+  updatedAt      DateTime? @updatedAt @map("updated_at")
+
+  @@map("sub_admins")
+}
+
+model TypeOfWork {
+  id          Int       @id @default(autoincrement())
+  name        String    @unique
+  description String?
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@map("type_of_work")
+}

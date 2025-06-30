@@ -224,14 +224,218 @@ const sampleSubAdmins = [
   }
 ];
 
+// Sample orders data matching the existing schema
+const sampleOrders = [
+  {
+    id: `order-${Date.now()}-1`,
+    referenceNumber: `ORD-${Date.now()}-001`,
+    title: 'Website Development Project',
+    description: 'Complete website development with modern design and responsive layout',
+    type: 'DEVELOPMENT', // Assuming this enum exists
+    status: 'IN_PROGRESS', // Assuming this enum exists
+    country: 'India',
+    priority: 'HIGH', // Assuming this enum exists
+    startDate: new Date('2024-06-01'),
+    dueDate: new Date('2024-07-15'),
+    completedDate: null,
+    amount: 50000.00,
+    paidAmount: 15000.00,
+    currency: 'INR',
+    customerId: 'cmc8xwifa000oug4wzd819iae', // Use existing customer
+    vendorId: null, // Will be assigned later
+    assignedToId: 'cmc8xw4jy0000ug4w41dehbd2', // Use existing admin user
+    createdAt: new Date(),
+    updatedAt: new Date()
+  },
+  {
+    id: `order-${Date.now()}-2`,
+    referenceNumber: `ORD-${Date.now()}-002`,
+    title: 'Digital Marketing Campaign',
+    description: 'Comprehensive digital marketing strategy and implementation',
+    type: 'MARKETING',
+    status: 'PENDING',
+    country: 'India',
+    priority: 'MEDIUM',
+    startDate: new Date('2024-06-15'),
+    dueDate: new Date('2024-08-15'),
+    completedDate: null,
+    amount: 75000.00,
+    paidAmount: 0.00,
+    currency: 'INR',
+    customerId: 'cmc8xwjy4000qug4w6bmk9r6v',
+    vendorId: null,
+    assignedToId: 'cmc8xw4jy0000ug4w41dehbd2',
+    createdAt: new Date(),
+    updatedAt: new Date()
+  },
+  {
+    id: `order-${Date.now()}-3`,
+    referenceNumber: `ORD-${Date.now()}-003`,
+    title: 'Mobile App Development',
+    description: 'Cross-platform mobile application development for iOS and Android',
+    type: 'DEVELOPMENT',
+    status: 'COMPLETED',
+    country: 'Canada',
+    priority: 'HIGH',
+    startDate: new Date('2024-05-01'),
+    dueDate: new Date('2024-06-30'),
+    completedDate: new Date('2024-06-25'),
+    amount: 120000.00,
+    paidAmount: 120000.00,
+    currency: 'CAD',
+    customerId: 'cmc8xwkvk000sug4wy6fl86oa',
+    vendorId: null,
+    assignedToId: 'cmc8xw4jy0000ug4w41dehbd2',
+    createdAt: new Date(),
+    updatedAt: new Date()
+  }
+];
+
+// Additional comprehensive vendor data
+const additionalVendors = [
+  {
+    id: `vendor-${Date.now()}-4`,
+    name: 'Legal Associates',
+    email: 'contact@legalassociates.com',
+    phone: '+91-9876543213',
+    company: 'Legal Associates',
+    country: 'India',
+    address: '101 Law Street, Delhi',
+    specialization: 'Legal services, patent filing, trademark registration, and compliance',
+    onboardingDate: new Date('2024-03-01'),
+    companyType: 'Partnership',
+    companyName: 'Legal Associates LLP',
+    city: 'Delhi',
+    state: 'Delhi',
+    username: 'legal_admin',
+    gstNumber: 'GST07LEGAL123F1Z5',
+    typeOfWork: ['Legal Services', 'Patent Filing', 'Compliance'],
+    isActive: true,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    createdById: 'cmc8xw4jy0000ug4w41dehbd2',
+    rating: 4.7
+  },
+  {
+    id: `vendor-${Date.now()}-5`,
+    name: 'CloudTech Solutions',
+    email: 'info@cloudtech.com',
+    phone: '+91-9876543214',
+    company: 'CloudTech Solutions',
+    country: 'India',
+    address: '202 Cloud Avenue, Hyderabad',
+    specialization: 'Cloud infrastructure, DevOps, and system administration services',
+    onboardingDate: new Date('2024-02-20'),
+    companyType: 'Private Limited',
+    companyName: 'CloudTech Solutions Pvt Ltd',
+    city: 'Hyderabad',
+    state: 'Telangana',
+    username: 'cloudtech_admin',
+    gstNumber: 'GST36CLOUD567F1Z5',
+    typeOfWork: ['Cloud Services', 'DevOps', 'System Administration'],
+    isActive: true,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    createdById: 'cmc8xw4jy0000ug4w41dehbd2',
+    rating: 4.6
+  }
+];
+
+// Additional comprehensive client data
+const additionalClients = [
+  {
+    company_name: 'StartupHub India',
+    company_type: 'Startup',
+    onboarding_date: new Date('2024-03-15'),
+    emails: ['founder@startuphub.in', 'operations@startuphub.in'],
+    phones: ['+91-9876543215', '+91-9876543216'],
+    address: 'Startup Incubator, Koramangala, Bangalore',
+    country: 'India',
+    state: 'Karnataka',
+    city: 'Bangalore',
+    dpiit_registered: true,
+    dpiit_number: 'DPIIT2024003',
+    files: {
+      registration: 'startuphub_registration.pdf',
+      dpiit_certificate: 'startuphub_dpiit.pdf',
+      business_plan: 'startuphub_business_plan.pdf'
+    },
+    status: 'Active',
+    created_at: new Date(),
+    updated_at: new Date()
+  },
+  {
+    company_name: 'Enterprise Solutions Ltd',
+    company_type: 'Private Limited',
+    onboarding_date: new Date('2024-04-01'),
+    emails: ['contact@enterprisesolutions.com', 'projects@enterprisesolutions.com'],
+    phones: ['+44-20-7946-0959', '+44-20-7946-0960'],
+    address: '25 Enterprise Street, London',
+    country: 'United Kingdom',
+    state: 'England',
+    city: 'London',
+    dpiit_registered: false,
+    dpiit_number: '',
+    files: {
+      registration: 'enterprise_solutions_registration.pdf',
+      tax_certificate: 'enterprise_solutions_tax.pdf'
+    },
+    status: 'Active',
+    created_at: new Date(),
+    updated_at: new Date()
+  }
+];
+
+// Additional type of work data
+const additionalTypeOfWork = [
+  {
+    name: 'Legal Services',
+    description: 'Patent filing, trademark registration, legal compliance, and contract drafting',
+    isActive: true,
+    createdAt: new Date(),
+    updatedAt: new Date()
+  },
+  {
+    name: 'Cloud Services',
+    description: 'Cloud infrastructure setup, migration, and management services',
+    isActive: true,
+    createdAt: new Date(),
+    updatedAt: new Date()
+  },
+  {
+    name: 'Data Analytics',
+    description: 'Business intelligence, data analysis, and reporting services',
+    isActive: true,
+    createdAt: new Date(),
+    updatedAt: new Date()
+  },
+  {
+    name: 'Mobile Development',
+    description: 'iOS and Android mobile application development',
+    isActive: true,
+    createdAt: new Date(),
+    updatedAt: new Date()
+  },
+  {
+    name: 'UI/UX Design',
+    description: 'User interface and user experience design services',
+    isActive: true,
+    createdAt: new Date(),
+    updatedAt: new Date()
+  }
+];
+
 /**
  * Seed vendors data
  */
 export const seedVendors = async () => {
   try {
     console.log('🌱 Seeding vendors data...');
-    
-    for (const vendor of sampleVendors) {
+
+    // Combine all vendor data
+    const allVendors = [...sampleVendors, ...additionalVendors];
+
+    for (const vendor of allVendors) {
       try {
         await sql`
           INSERT INTO vendors (
@@ -267,8 +471,11 @@ export const seedVendors = async () => {
 export const seedClients = async () => {
   try {
     console.log('🌱 Seeding clients data...');
-    
-    for (const client of sampleClients) {
+
+    // Combine all client data
+    const allClients = [...sampleClients, ...additionalClients];
+
+    for (const client of allClients) {
       try {
         await sql`
           INSERT INTO clients (
@@ -304,7 +511,10 @@ export const seedTypeOfWork = async () => {
   try {
     console.log('🌱 Seeding type of work data...');
 
-    for (const work of sampleTypeOfWork) {
+    // Combine all type of work data
+    const allTypeOfWork = [...sampleTypeOfWork, ...additionalTypeOfWork];
+
+    for (const work of allTypeOfWork) {
       try {
         await sql`
           INSERT INTO type_of_work (name, description, "isActive", "createdAt", "updatedAt")
@@ -361,6 +571,43 @@ export const seedSubAdmins = async () => {
 };
 
 /**
+ * Seed orders data
+ */
+export const seedOrders = async () => {
+  try {
+    console.log('🌱 Seeding orders data...');
+
+    for (const order of sampleOrders) {
+      try {
+        await sql`
+          INSERT INTO orders (
+            id, "referenceNumber", title, description, type, status, country, priority,
+            "startDate", "dueDate", "completedDate", amount, "paidAmount", currency,
+            "customerId", "vendorId", "assignedToId", "createdAt", "updatedAt"
+          ) VALUES (
+            ${order.id}, ${order.referenceNumber}, ${order.title}, ${order.description},
+            ${order.type}, ${order.status}, ${order.country}, ${order.priority},
+            ${order.startDate}, ${order.dueDate}, ${order.completedDate}, ${order.amount},
+            ${order.paidAmount}, ${order.currency}, ${order.customerId}, ${order.vendorId},
+            ${order.assignedToId}, ${order.createdAt}, ${order.updatedAt}
+          )
+          ON CONFLICT (id) DO NOTHING
+        `;
+        console.log(`✅ Seeded order: ${order.title}`);
+      } catch (error) {
+        console.log(`⚠️ Order ${order.title} already exists or error:`, error.message);
+      }
+    }
+
+    console.log('✅ Orders seeding completed');
+    return true;
+  } catch (error) {
+    console.error('❌ Error seeding orders:', error);
+    return false;
+  }
+};
+
+/**
  * Seed all data
  */
 export const seedAllData = async () => {
@@ -371,7 +618,8 @@ export const seedAllData = async () => {
       vendors: await seedVendors(),
       clients: await seedClients(),
       typeOfWork: await seedTypeOfWork(),
-      subAdmins: await seedSubAdmins()
+      subAdmins: await seedSubAdmins(),
+      orders: await seedOrders()
     };
 
     const successCount = Object.values(results).filter(Boolean).length;
@@ -425,14 +673,17 @@ export const getSeedingStatus = async () => {
     const clientCount = await sql`SELECT COUNT(*) as count FROM clients`;
     const typeOfWorkCount = await sql`SELECT COUNT(*) as count FROM type_of_work`;
     const subAdminCount = await sql`SELECT COUNT(*) as count FROM sub_admins`;
+    const orderCount = await sql`SELECT COUNT(*) as count FROM orders`;
 
     return {
       vendors: parseInt(vendorCount[0].count),
       clients: parseInt(clientCount[0].count),
       typeOfWork: parseInt(typeOfWorkCount[0].count),
       subAdmins: parseInt(subAdminCount[0].count),
+      orders: parseInt(orderCount[0].count),
       total: parseInt(vendorCount[0].count) + parseInt(clientCount[0].count) +
-             parseInt(typeOfWorkCount[0].count) + parseInt(subAdminCount[0].count)
+             parseInt(typeOfWorkCount[0].count) + parseInt(subAdminCount[0].count) +
+             parseInt(orderCount[0].count)
     };
   } catch (error) {
     console.error('❌ Error getting seeding status:', error);
