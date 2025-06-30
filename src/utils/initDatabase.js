@@ -1,14 +1,23 @@
 import { testConnection, initializeDatabase, insertSampleData, refreshDatabaseData } from '../config/database.js';
+import { performHealthCheck } from './dbHealthCheck.js';
 
 // Initialize the database when the app starts
 export const initApp = async () => {
   try {
     console.log('🚀 Starting application initialization...');
-    
-    // Test database connection
-    console.log('🔄 Testing database connection...');
+
+    // Perform comprehensive health check
+    console.log('🔄 Performing database health check...');
+    const healthCheck = await performHealthCheck();
+
+    if (!healthCheck.connection) {
+      throw new Error('Database connection failed: ' + healthCheck.errors.join(', '));
+    }
+
+    // Test database connection (legacy)
+    console.log('🔄 Testing database connection (legacy)...');
     const connectionSuccess = await testConnection();
-    
+
     if (!connectionSuccess) {
       throw new Error('Database connection failed');
     }

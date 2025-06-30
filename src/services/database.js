@@ -1,4 +1,5 @@
 import { sql } from '../config/database.js';
+import { transformVendorFromDB, transformVendorToDB, transformClientFromDB, transformClientToDB } from '../utils/schemaAdapter.js';
 
 // Vendors
 export const getAllVendors = async () => {
@@ -7,29 +8,8 @@ export const getAllVendors = async () => {
     const vendors = await sql`SELECT * FROM vendors ORDER BY "createdAt" DESC`;
     console.log('✅ Vendors fetched:', vendors.length);
 
-    // Transform database data to match UI expectations
-    return vendors.map(vendor => ({
-      id: vendor.id,
-      company_name: vendor.companyName || vendor.company || vendor.name,
-      company_type: vendor.companyType || 'Company',
-      onboarding_date: vendor.onboardingDate ? new Date(vendor.onboardingDate).toISOString().split('T')[0] : (vendor.createdAt ? new Date(vendor.createdAt).toISOString().split('T')[0] : ''),
-      emails: vendor.email ? [vendor.email] : [],
-      phones: vendor.phone ? [vendor.phone] : [],
-      address: vendor.address || '',
-      country: vendor.country || '',
-      state: vendor.state || '',
-      city: vendor.city || '',
-      username: vendor.username || '',
-      gst_number: vendor.gstNumber || '',
-      description: vendor.specialization || '',
-      services: typeof vendor.typeOfWork === 'string' ? [vendor.typeOfWork] : (vendor.typeOfWork || []),
-      website: vendor.website || '',
-      type_of_work: vendor.typeOfWork || '',
-      status: vendor.isActive ? 'Active' : 'Inactive',
-      files: vendor.files || {},
-      rating: vendor.rating || 0,
-      total_orders: vendor.totalOrders || 0
-    }));
+    // Transform database data to match UI expectations using schema adapter
+    return vendors.map(transformVendorFromDB);
   } catch (error) {
     console.error('❌ Error fetching vendors:', error);
     throw error;
@@ -48,21 +28,38 @@ export const getVendorById = async (id) => {
 
 export const createVendor = async (vendorData) => {
   try {
+    // Transform application data to database format
+    const dbData = transformVendorToDB(vendorData);
+
     const result = await sql`
       INSERT INTO vendors (
-        company_name, company_type, onboarding_date, emails, phones, 
-        address, country, state, city, username, gst_number, 
-        description, services, website, type_of_work, status, files, rating, total_orders
+        id, name, email, phone, company, country, address, specialization,
+        "onboardingDate", "companyType", "companyName", city, state, username,
+        "gstNumber", "typeOfWork", "isActive", "createdAt", "updatedAt", "createdById"
       ) VALUES (
-        ${vendorData.company_name}, ${vendorData.company_type}, ${vendorData.onboarding_date},
-        ${JSON.stringify(vendorData.emails)}, ${JSON.stringify(vendorData.phones)},
-        ${vendorData.address}, ${vendorData.country}, ${vendorData.state}, ${vendorData.city},
-        ${vendorData.username}, ${vendorData.gst_number}, ${vendorData.description},
-        ${JSON.stringify(vendorData.services)}, ${vendorData.website}, ${vendorData.type_of_work},
-        ${vendorData.status}, ${JSON.stringify(vendorData.files)}, ${vendorData.rating || 0}, ${vendorData.total_orders || 0}
+        ${dbData.id},
+        ${dbData.name},
+        ${dbData.email},
+        ${dbData.phone},
+        ${dbData.company},
+        ${dbData.country},
+        ${dbData.address},
+        ${dbData.specialization},
+        ${dbData.onboardingDate},
+        ${dbData.companyType},
+        ${dbData.companyName},
+        ${dbData.city},
+        ${dbData.state},
+        ${dbData.username},
+        ${dbData.gstNumber},
+        ${JSON.stringify(dbData.typeOfWork)},
+        ${dbData.isActive},
+        ${dbData.createdAt},
+        ${dbData.updatedAt},
+        ${dbData.createdById}
       ) RETURNING *
     `;
-    return result[0];
+    return transformVendorFromDB(result[0]);
   } catch (error) {
     console.error('Error creating vendor:', error);
     throw error;
@@ -73,25 +70,23 @@ export const updateVendor = async (id, vendorData) => {
   try {
     const result = await sql`
       UPDATE vendors SET
-        company_name = ${vendorData.company_name},
-        company_type = ${vendorData.company_type},
-        onboarding_date = ${vendorData.onboarding_date},
-        emails = ${JSON.stringify(vendorData.emails)},
-        phones = ${JSON.stringify(vendorData.phones)},
-        address = ${vendorData.address},
-        country = ${vendorData.country},
-        state = ${vendorData.state},
-        city = ${vendorData.city},
-        username = ${vendorData.username},
-        gst_number = ${vendorData.gst_number},
-        description = ${vendorData.description},
-        services = ${JSON.stringify(vendorData.services)},
-        website = ${vendorData.website},
-        type_of_work = ${vendorData.type_of_work},
-        status = ${vendorData.status},
-        files = ${JSON.stringify(vendorData.files)},
-        rating = ${vendorData.rating},
-        total_orders = ${vendorData.total_orders}
+        name = ${vendorData.company_name || vendorData.name || ''},
+        email = ${vendorData.emails && vendorData.emails[0] ? vendorData.emails[0] : ''},
+        phone = ${vendorData.phones && vendorData.phones[0] ? vendorData.phones[0] : ''},
+        company = ${vendorData.company_name || ''},
+        "companyType" = ${vendorData.company_type || 'Company'},
+        "companyName" = ${vendorData.company_name || ''},
+        "onboardingDate" = ${vendorData.onboarding_date ? new Date(vendorData.onboarding_date) : null},
+        address = ${vendorData.address || ''},
+        country = ${vendorData.country || ''},
+        state = ${vendorData.state || ''},
+        city = ${vendorData.city || ''},
+        username = ${vendorData.username || ''},
+        "gstNumber" = ${vendorData.gst_number || ''},
+        specialization = ${vendorData.description || ''},
+        "typeOfWork" = ${vendorData.services ? JSON.stringify(vendorData.services) : '[]'},
+        "isActive" = ${vendorData.status === 'Active'},
+        "updatedAt" = ${new Date()}
       WHERE id = ${id}
       RETURNING *
     `;

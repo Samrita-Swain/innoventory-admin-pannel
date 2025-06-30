@@ -1,7 +1,22 @@
 import { neon } from '@neondatabase/serverless';
 
-// Database connection
-const DATABASE_URL = import.meta.env.VITE_DATABASE_URL || 'postgresql://neondb_owner:npg_Ej8Ej8Ej8Ej8Ej8Ej8Ej8Ej8Ej8@ep-rough-forest-a5ixqhqr.us-east-2.aws.neon.tech/neondb?sslmode=require';
+// Database connection - get from environment variables
+// Support both Vite (import.meta.env) and Node.js (process.env) environments
+let DATABASE_URL;
+
+if (typeof import.meta !== 'undefined' && import.meta.env) {
+  // Vite/browser environment
+  DATABASE_URL = import.meta.env.VITE_DATABASE_URL;
+} else {
+  // Node.js environment - try both VITE_DATABASE_URL and DATABASE_URL
+  DATABASE_URL = process.env.VITE_DATABASE_URL || process.env.DATABASE_URL;
+}
+
+if (!DATABASE_URL) {
+  throw new Error('Database URL not found. Please set VITE_DATABASE_URL or DATABASE_URL in your .env file.');
+}
+
+console.log('🔗 Connecting to database:', DATABASE_URL.replace(/:[^:@]*@/, ':****@')); // Hide password in logs
 
 export const sql = neon(DATABASE_URL);
 
@@ -9,11 +24,29 @@ export const sql = neon(DATABASE_URL);
 export const testConnection = async () => {
   try {
     console.log('🔄 Testing database connection...');
-    await sql`SELECT 1`;
+    console.log('🔗 Using database URL:', DATABASE_URL.replace(/:[^:@]*@/, ':****@'));
+
+    const result = await sql`SELECT 1 as test, version() as db_version`;
     console.log('✅ Database connection successful');
+    console.log('📊 Database info:', result[0]);
     return true;
   } catch (error) {
     console.error('❌ Database connection failed:', error);
+    console.error('🔍 Error details:', {
+      message: error.message,
+      code: error.code,
+      detail: error.detail
+    });
+
+    // Check if it's a common connection issue
+    if (error.message.includes('getaddrinfo ENOTFOUND')) {
+      console.error('🌐 Network issue: Cannot resolve database hostname');
+    } else if (error.message.includes('authentication failed')) {
+      console.error('🔐 Authentication issue: Check your database credentials');
+    } else if (error.message.includes('database') && error.message.includes('does not exist')) {
+      console.error('🗄️ Database issue: Database does not exist');
+    }
+
     return false;
   }
 };
@@ -137,16 +170,28 @@ export const initializeSchema = async () => {
   }
 };
 
-// Insert sample data
+// Insert sample data using the new seeding service
 export const insertSampleData = async () => {
   try {
-    console.log('🔄 Inserting sample data...');
-    console.log('⚠️ Skipping sample data insertion to avoid schema conflicts');
-    console.log('✅ Sample data insertion completed (skipped for compatibility)');
-    return true;
+    console.log('🔄 Inserting sample data using seeding service...');
+
+    // Import the seeding service dynamically to avoid circular dependencies
+    const { seedAllData } = await import('../services/seedService.js');
+
+    const result = await seedAllData();
+
+    if (result.success) {
+      console.log('✅ Sample data insertion completed successfully');
+      console.log('📊 Seeding summary:', result.summary);
+      return true;
+    } else {
+      console.warn('⚠️ Sample data insertion completed with some issues');
+      console.log('📊 Seeding summary:', result.summary);
+      return true; // Return true to not block app initialization
+    }
   } catch (error) {
     console.error('❌ Error inserting sample data:', error);
-    return false;
+    return true; // Return true to not block app initialization
   }
 };
 

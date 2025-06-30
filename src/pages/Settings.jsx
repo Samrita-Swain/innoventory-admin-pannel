@@ -7,6 +7,7 @@ import {
   UserIcon,
   GlobeAltIcon
 } from '@heroicons/react/24/outline';
+import DataSeeding from '../components/DataSeeding';
 
 const Settings = () => {
   const [activeTab, setActiveTab] = useState('general');
@@ -32,6 +33,7 @@ const Settings = () => {
     { id: 'notifications', name: 'Notifications', icon: BellIcon },
     { id: 'security', name: 'Security', icon: ShieldCheckIcon },
     { id: 'system', name: 'System', icon: CircleStackIcon },
+    { id: 'database', name: 'Database', icon: CircleStackIcon },
     { id: 'profile', name: 'Profile', icon: UserIcon },
   ];
 
@@ -264,6 +266,17 @@ const Settings = () => {
                 placeholder="PDF, Images, Word, Excel"
               />
             </div>
+          </div>
+        );
+
+      case 'database':
+        return (
+          <div className="space-y-6">
+            <div className="mb-4">
+              <h3 className="text-lg font-medium text-gray-900 mb-2">Database Management</h3>
+              <p className="text-gray-600">Manage database seeding, backups, and maintenance operations.</p>
+            </div>
+            <DataSeeding />
           </div>
         );
 
