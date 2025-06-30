@@ -6,44 +6,43 @@ export const getAllVendors = async () => {
     const vendors = await sql`
       SELECT
         id,
-        name,
-        company,
-        "companyName",
-        "companyType",
-        "onboardingDate",
-        email,
-        phone,
+        company_name,
+        company_type,
+        onboarding_date,
+        emails,
+        phones,
         address,
         country,
         state,
         city,
         username,
-        "gstNumber",
-        specialization,
-        "typeOfWork",
-        "isActive",
+        gst_number,
+        description,
+        services,
+        website,
+        type_of_work,
+        status,
+        files,
         rating,
-        "createdAt",
-        "updatedAt"
+        total_orders,
+        created_at,
+        updated_at
       FROM vendors
-      ORDER BY "createdAt" DESC
+      ORDER BY created_at DESC
     `;
 
     // Transform data to match UI expectations and format dates
     return vendors.map(vendor => ({
       ...vendor,
-      // Map database fields to UI expected fields
-      company_name: vendor.companyName || vendor.company || vendor.name || 'N/A',
-      emails: vendor.email ? [vendor.email] : [],
-      phones: vendor.phone ? [vendor.phone] : [],
-      company_type: vendor.companyType || 'N/A',
-      type_of_work: Array.isArray(vendor.typeOfWork) ? vendor.typeOfWork.join(', ') : (vendor.specialization || 'N/A'),
-      status: vendor.isActive ? 'Active' : 'Inactive',
-      totalOrders: vendor.totalOrders || 0,
+      // Ensure emails and phones are arrays
+      emails: Array.isArray(vendor.emails) ? vendor.emails : (vendor.emails ? [vendor.emails] : []),
+      phones: Array.isArray(vendor.phones) ? vendor.phones : (vendor.phones ? [vendor.phones] : []),
+      // Add camelCase versions for compatibility
+      totalOrders: vendor.total_orders || 0,
+      onboardingDate: vendor.onboarding_date ? new Date(vendor.onboarding_date).toISOString().split('T')[0] : '',
       // Format dates to strings to prevent React errors
-      onboardingDate: vendor.onboardingDate ? new Date(vendor.onboardingDate).toISOString().split('T')[0] : '',
-      createdAt: vendor.createdAt ? new Date(vendor.createdAt).toISOString().split('T')[0] : '',
-      updatedAt: vendor.updatedAt ? new Date(vendor.updatedAt).toISOString().split('T')[0] : ''
+      createdAt: vendor.created_at ? new Date(vendor.created_at).toISOString().split('T')[0] : '',
+      updatedAt: vendor.updated_at ? new Date(vendor.updated_at).toISOString().split('T')[0] : ''
     }));
   } catch (error) {
     console.error('Error fetching vendors:', error);
@@ -192,25 +191,27 @@ export const getVendorById = async (id) => {
     const vendor = await sql`
       SELECT
         id,
-        name,
-        company,
-        "companyName",
-        "companyType",
-        "onboardingDate",
-        email,
-        phone,
+        company_name,
+        company_type,
+        onboarding_date,
+        emails,
+        phones,
         address,
         country,
         state,
         city,
         username,
-        "gstNumber",
-        specialization,
-        "typeOfWork",
-        "isActive",
+        gst_number,
+        description,
+        services,
+        website,
+        type_of_work,
+        status,
+        files,
         rating,
-        "createdAt",
-        "updatedAt"
+        total_orders,
+        created_at,
+        updated_at
       FROM vendors
       WHERE id = ${id}
     `;
@@ -271,32 +272,31 @@ export const createVendor = async (vendorData) => {
 
     const vendor = await sql`
       INSERT INTO vendors (
-        name,
-        company,
-        "companyName",
-        "companyType",
-        "onboardingDate",
-        email,
-        phone,
+        company_name,
+        company_type,
+        onboarding_date,
+        emails,
+        phones,
         address,
         country,
         state,
         city,
         username,
-        "gstNumber",
-        specialization,
-        "typeOfWork",
-        "isActive",
-        "updatedAt",
-        "createdById"
+        gst_number,
+        description,
+        services,
+        website,
+        type_of_work,
+        status,
+        files,
+        rating,
+        total_orders
       ) VALUES (
-        ${companyName},
-        ${companyName},
         ${companyName},
         ${companyType},
         ${onboardingDate},
-        ${emails[0] || ''},
-        ${phones[0] || ''},
+        ${JSON.stringify(emails)},
+        ${JSON.stringify(phones)},
         ${address},
         ${country},
         ${state},
@@ -304,10 +304,13 @@ export const createVendor = async (vendorData) => {
         ${username},
         ${gstNumber},
         ${description},
-        ${JSON.stringify(services)},
-        ${status === 'Active'},
-        NOW(),
-        'admin'
+        ${JSON.stringify(services || [])},
+        ${website || ''},
+        ${typeOfWork || ''},
+        ${status || 'Pending'},
+        ${JSON.stringify(files || {})},
+        ${0.0},
+        ${0}
       )
       RETURNING *
     `;
@@ -401,23 +404,26 @@ export const updateVendor = async (id, vendorData) => {
     // Perform the update using a simple approach
     const vendor = await sql`
       UPDATE vendors SET
-        name = ${updateObj.name || sql`name`},
-        company = ${updateObj.company || sql`company`},
-        "companyName" = ${updateObj.companyName || sql`"companyName"`},
-        "companyType" = ${updateObj.companyType || sql`"companyType"`},
-        "onboardingDate" = ${updateObj.onboardingDate || sql`"onboardingDate"`},
-        email = ${updateObj.email || sql`email`},
-        phone = ${updateObj.phone || sql`phone`},
+        company_name = ${updateObj.companyName || sql`company_name`},
+        company_type = ${updateObj.companyType || sql`company_type`},
+        onboarding_date = ${updateObj.onboardingDate || sql`onboarding_date`},
+        emails = ${updateObj.emails ? JSON.stringify(updateObj.emails) : sql`emails`},
+        phones = ${updateObj.phones ? JSON.stringify(updateObj.phones) : sql`phones`},
         address = ${updateObj.address || sql`address`},
         country = ${updateObj.country || sql`country`},
         state = ${updateObj.state || sql`state`},
         city = ${updateObj.city || sql`city`},
         username = ${updateObj.username || sql`username`},
-        "gstNumber" = ${updateObj.gstNumber || sql`"gstNumber"`},
+        gst_number = ${updateObj.gstNumber || sql`gst_number`},
+        description = ${updateObj.description || sql`description`},
+        services = ${updateObj.services ? JSON.stringify(updateObj.services) : sql`services`},
+        website = ${updateObj.website || sql`website`},
+        type_of_work = ${updateObj.typeOfWork || sql`type_of_work`},
+        status = ${updateObj.status || sql`status`},
+        files = ${updateObj.files ? JSON.stringify(updateObj.files) : sql`files`},
         rating = ${updateObj.rating || sql`rating`},
-        specialization = ${updateObj.specialization || sql`specialization`},
-        "isActive" = ${updateObj.isActive !== undefined ? updateObj.isActive : sql`"isActive"`},
-        "updatedAt" = NOW()
+        total_orders = ${updateObj.totalOrders || sql`total_orders`},
+        updated_at = NOW()
       WHERE id = ${id}
       RETURNING *
     `;
