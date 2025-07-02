@@ -5,6 +5,7 @@ import DataTable from '../components/DataTable/DataTable';
 import FileUpload from '../components/FileUpload/FileUpload';
 import { getAllVendors, createVendor, deleteVendor, getVendorStats } from '../services/vendorService';
 import { getActiveTypeOfWork } from '../services/typeOfWorkService';
+import { getAllStates, getCitiesByStateName } from '../services/locationService';
 
 // Demo data fallback
 const demoVendors = [
@@ -83,6 +84,8 @@ const Vendors = () => {
   });
   const [availableStates, setAvailableStates] = useState([]);
   const [availableCities, setAvailableCities] = useState([]);
+  const [loadingStates, setLoadingStates] = useState(false);
+  const [loadingCities, setLoadingCities] = useState(false);
   const [vendorsList, setVendorsList] = useState([]);
   const [typeOfWorkOptions, setTypeOfWorkOptions] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -245,10 +248,42 @@ const Vendors = () => {
     }
   };
 
+  // Load states from government API
+  const loadStates = async () => {
+    try {
+      setLoadingStates(true);
+      console.log('🔄 Loading states from government API...');
+      const states = await getAllStates();
+      setAvailableStates(states);
+      console.log(`✅ Loaded ${states.length} states`);
+    } catch (error) {
+      console.error('❌ Error loading states:', error);
+    } finally {
+      setLoadingStates(false);
+    }
+  };
+
+  // Load cities for selected state
+  const loadCities = async (stateName) => {
+    try {
+      setLoadingCities(true);
+      console.log(`🔄 Loading cities for state ${stateName}...`);
+      const cities = await getCitiesByStateName(stateName);
+      setAvailableCities(cities);
+      console.log(`✅ Loaded ${cities.length} cities`);
+    } catch (error) {
+      console.error('❌ Error loading cities:', error);
+      setAvailableCities([]);
+    } finally {
+      setLoadingCities(false);
+    }
+  };
+
   // Load data on component mount
   useEffect(() => {
     loadVendors();
     loadTypeOfWork();
+    loadStates();
   }, []);
 
   // Country, State, City data
@@ -387,7 +422,13 @@ const Vendors = () => {
 
     // Handle country change
     if (name === 'country') {
-      setAvailableStates(Object.keys(countryStateCity[value] || {}));
+      if (value === 'India') {
+        // Load states for India from government API
+        loadStates();
+      } else {
+        // For other countries, use fallback data
+        setAvailableStates(Object.keys(countryStateCity[value] || {}));
+      }
       setAvailableCities([]);
       setFormData(prev => ({
         ...prev,
@@ -398,7 +439,13 @@ const Vendors = () => {
 
     // Handle state change
     if (name === 'state') {
-      setAvailableCities(countryStateCity[formData.country]?.[value] || []);
+      if (formData.country === 'India') {
+        // Load cities from local JSON for Indian states
+        loadCities(value);
+      } else {
+        // Use fallback data for other countries
+        setAvailableCities(countryStateCity[formData.country]?.[value] || []);
+      }
       setFormData(prev => ({
         ...prev,
         city: ''
@@ -457,10 +504,21 @@ const Vendors = () => {
   };
 
   const handleFileChange = (fileType, files) => {
-    setUploadedFiles(prev => ({
-      ...prev,
-      [fileType]: files[0] || null
-    }));
+    console.log('📁 File change for', fileType, ':', files);
+
+    if (fileType === 'companyLogos') {
+      // Handle multiple files for company logos
+      setUploadedFiles(prev => ({
+        ...prev,
+        [fileType]: files || []
+      }));
+    } else {
+      // Handle single file for other types
+      setUploadedFiles(prev => ({
+        ...prev,
+        [fileType]: files && files.length > 0 ? files[0] : null
+      }));
+    }
   };
 
   // Handle company logo file uploads (multiple files)
@@ -546,8 +604,30 @@ const Vendors = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    // Validation
+    if (!formData.companyName || formData.companyName.trim() === '') {
+      alert('❌ Company name is required');
+      return;
+    }
+
+    if (!formData.emails[0] || formData.emails[0].trim() === '') {
+      alert('❌ At least one email is required');
+      return;
+    }
+
+    // Email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const invalidEmails = formData.emails.filter(email => email && !emailRegex.test(email));
+    if (invalidEmails.length > 0) {
+      alert('❌ Please enter valid email addresses');
+      return;
+    }
+
     try {
       setLoading(true);
+      console.log('🚀 Submitting vendor form...');
+      console.log('📋 Form data:', formData);
+      console.log('📁 Uploaded files:', uploadedFiles);
 
       // Create new vendor object
       const vendorData = {
@@ -555,8 +635,11 @@ const Vendors = () => {
         files: uploadedFiles
       };
 
+      console.log('💾 Sending vendor data to service:', vendorData);
+
       // Save to database
-      await createVendor(vendorData);
+      const result = await createVendor(vendorData);
+      console.log('✅ Vendor created successfully:', result);
 
       // Reload vendors list
       await loadVendors();
@@ -591,10 +674,10 @@ const Vendors = () => {
       setShowAddForm(false);
 
       // Show success message
-      alert('Vendor added successfully!');
+      alert('✅ Vendor added successfully! All files have been saved locally and data stored in database.');
     } catch (err) {
-      console.error('Error creating vendor:', err);
-      alert('Failed to create vendor. Please try again.');
+      console.error('❌ Error creating vendor:', err);
+      alert(`❌ Failed to create vendor: ${err.message || 'Please try again.'}`);
     } finally {
       setLoading(false);
     }
@@ -962,9 +1045,13 @@ const Vendors = () => {
                         disabled={!formData.country}
                         className="input-field disabled:bg-gray-100"
                       >
-                        <option value="">Select state</option>
+                        <option value="">
+                          {loadingStates ? 'Loading states...' : 'Select state'}
+                        </option>
                         {availableStates.map(state => (
-                          <option key={state} value={state}>{state}</option>
+                          <option key={state.id || state} value={state.name || state}>
+                            {state.name || state}
+                          </option>
                         ))}
                       </select>
                     </div>
@@ -981,9 +1068,13 @@ const Vendors = () => {
                         disabled={!formData.state}
                         className="input-field disabled:bg-gray-100"
                       >
-                        <option value="">Select city</option>
+                        <option value="">
+                          {loadingCities ? 'Loading cities...' : 'Select city'}
+                        </option>
                         {availableCities.map(city => (
-                          <option key={city} value={city}>{city}</option>
+                          <option key={city.id || city} value={city.name || city}>
+                            {city.name || city}
+                          </option>
                         ))}
                       </select>
                     </div>

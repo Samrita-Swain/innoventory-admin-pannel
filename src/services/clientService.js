@@ -1,4 +1,5 @@
 import { sql } from '../config/database.js';
+import { processClientFiles } from './fileUploadService.js';
 
 // Get all clients
 export const getAllClients = async () => {
@@ -187,6 +188,8 @@ export const getClientById = async (id) => {
 // Create new client
 export const createClient = async (clientData) => {
   try {
+    console.log('🔄 Creating client with data:', clientData);
+
     const {
       companyName,
       companyType,
@@ -202,6 +205,35 @@ export const createClient = async (clientData) => {
       files = {},
       status = 'Active'
     } = clientData;
+
+    // Process uploaded files
+    let processedFiles = {};
+
+    try {
+      if (files && Object.keys(files).length > 0) {
+        console.log('📁 Processing client files...');
+        processedFiles = await processClientFiles(files, companyName);
+        console.log('✅ Files processed:', processedFiles);
+      }
+    } catch (fileError) {
+      console.warn('⚠️ File processing failed, continuing without files:', fileError);
+    }
+
+    // Prepare data for database insertion
+    console.log('📋 Form data breakdown:');
+    console.log('  - Company Name:', companyName);
+    console.log('  - Company Type:', companyType);
+    console.log('  - Onboarding Date:', onboardingDate);
+    console.log('  - Emails:', emails);
+    console.log('  - Phones:', phones);
+    console.log('  - Address:', address);
+    console.log('  - Country:', country);
+    console.log('  - State:', state);
+    console.log('  - City:', city);
+    console.log('  - DPIIT Registered:', dpiitRegistered);
+    console.log('  - DPIIT Number:', dpiitNumber);
+    console.log('  - Status:', status);
+    console.log('  - Files:', processedFiles);
 
     const client = await sql`
       INSERT INTO clients (
@@ -219,25 +251,27 @@ export const createClient = async (clientData) => {
         files,
         status
       ) VALUES (
-        ${companyName},
-        ${companyType},
-        ${onboardingDate},
-        ${JSON.stringify(emails)},
-        ${JSON.stringify(phones)},
-        ${address},
-        ${country},
-        ${state},
-        ${city},
-        ${dpiitRegistered},
-        ${dpiitNumber},
-        ${JSON.stringify(files)},
-        ${status}
+        ${companyName || ''},
+        ${companyType || null},
+        ${onboardingDate ? new Date(onboardingDate) : null},
+        ${JSON.stringify(emails || [])},
+        ${JSON.stringify(phones || [])},
+        ${address || null},
+        ${country || null},
+        ${state || null},
+        ${city || null},
+        ${dpiitRegistered || false},
+        ${dpiitNumber || null},
+        ${JSON.stringify(processedFiles)},
+        ${status || 'Active'}
       )
       RETURNING *
     `;
+
+    console.log('✅ Client created successfully:', client[0]);
     return client[0];
   } catch (error) {
-    console.error('Error creating client:', error);
+    console.error('❌ Error creating client:', error);
     throw error;
   }
 };

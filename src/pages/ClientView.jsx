@@ -15,6 +15,7 @@ import {
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import * as XLSX from 'xlsx';
+import FileViewer from '../components/FileViewer/FileViewer';
 
 const ClientView = () => {
   const { id } = useParams();
@@ -625,22 +626,13 @@ const ClientView = () => {
             </div>
           </div>
 
-          {/* Documents */}
+          {/* Uploaded Files */}
           <div className="card">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Documents</h3>
-            <div className="space-y-3">
-              {(client.documents || []).map((doc, index) => (
-                <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">{doc.name}</p>
-                    <p className="text-xs text-gray-500">{doc.size} • {doc.uploadDate}</p>
-                  </div>
-                  <button className="text-blue-600 hover:text-blue-900">
-                    <DocumentArrowDownIcon className="h-4 w-4" />
-                  </button>
-                </div>
-              ))}
-            </div>
+            <FileViewer
+              files={client.files || {}}
+              title="Uploaded Documents"
+              readOnly={true}
+            />
           </div>
 
           {/* Quick Actions */}

@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Location Service</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .container {
+            margin: 20px 0;
+        }
+        select, button {
+            padding: 10px;
+            margin: 5px;
+            font-size: 16px;
+        }
+        .results {
+            background: #f5f5f5;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .loading {
+            color: #666;
+            font-style: italic;
+        }
+        .error {
+            color: red;
+        }
+        .success {
+            color: green;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 Location Service Test</h1>
+    <p>Testing states and cities loading from local JSON file</p>
+
+    <div class="container">
+        <h3>States</h3>
+        <button onclick="loadStates()">Load States</button>
+        <select id="stateSelect" onchange="onStateChange()">
+            <option value="">Select a state</option>
+        </select>
+        <div id="statesResult" class="results"></div>
+    </div>
+
+    <div class="container">
+        <h3>Cities</h3>
+        <select id="citySelect">
+            <option value="">Select a city</option>
+        </select>
+        <div id="citiesResult" class="results"></div>
+    </div>
+
+    <script type="module">
+        // Location service functions
+        let locationData = null;
+        let statesCache = null;
+        let citiesCache = {};
+
+        const loadLocationData = async () => {
+            try {
+                if (locationData) {
+                    return locationData;
+                }
+
+                console.log('🔄 Loading states and cities from local JSON file...');
+                
+                const response = await fetch('/cities_states.json');
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                locationData = await response.json();
+                console.log(`✅ Loaded ${locationData.length} states with cities from JSON file`);
+                
+                return locationData;
+            } catch (error) {
+                console.error('❌ Error loading location data:', error);
+                throw error;
+            }
+        };
+
+        const getAllStates = async () => {
+            try {
+                if (statesCache) {
+                    console.log('📍 Returning cached states data');
+                    return statesCache;
+                }
+
+                const data = await loadLocationData();
+                
+                const states = data.map((state, index) => ({
+                    id: index + 1,
+                    name: state.name,
+                    code: state.name.substring(0, 2).toUpperCase()
+                }));
+
+                states.sort((a, b) => a.name.localeCompare(b.name));
+                statesCache = states;
+                
+                console.log(`✅ Processed ${states.length} states successfully`);
+                return states;
+
+            } catch (error) {
+                console.error('❌ Error fetching states:', error);
+                throw error;
+            }
+        };
+
+        const getCitiesByStateName = async (stateName) => {
+            try {
+                if (citiesCache[stateName]) {
+                    console.log(`📍 Returning cached cities for state ${stateName}`);
+                    return citiesCache[stateName];
+                }
+
+                console.log(`🔄 Loading cities for state ${stateName}...`);
+                
+                const data = await loadLocationData();
+                const stateData = data.find(state => state.name === stateName);
+                
+                if (!stateData) {
+                    console.warn(`⚠️ State ${stateName} not found in data`);
+                    return [];
+                }
+                
+                const cities = stateData.cities.map((city, index) => ({
+                    id: index + 1,
+                    name: city,
+                    stateName: stateName
+                }));
+
+                cities.sort((a, b) => a.name.localeCompare(b.name));
+                citiesCache[stateName] = cities;
+                
+                console.log(`✅ Loaded ${cities.length} cities for state ${stateName}`);
+                return cities;
+
+            } catch (error) {
+                console.error(`❌ Error loading cities for state ${stateName}:`, error);
+                return [];
+            }
+        };
+
+        // UI functions
+        window.loadStates = async () => {
+            const resultDiv = document.getElementById('statesResult');
+            const stateSelect = document.getElementById('stateSelect');
+            
+            try {
+                resultDiv.innerHTML = '<div class="loading">Loading states...</div>';
+                
+                const states = await getAllStates();
+                
+                // Clear and populate select
+                stateSelect.innerHTML = '<option value="">Select a state</option>';
+                states.forEach(state => {
+                    const option = document.createElement('option');
+                    option.value = state.name;
+                    option.textContent = state.name;
+                    stateSelect.appendChild(option);
+                });
+                
+                resultDiv.innerHTML = `
+                    <div class="success">✅ Successfully loaded ${states.length} states</div>
+                    <div>Sample states: ${states.slice(0, 5).map(s => s.name).join(', ')}...</div>
+                `;
+                
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="error">❌ Error: ${error.message}</div>`;
+            }
+        };
+
+        window.onStateChange = async () => {
+            const stateSelect = document.getElementById('stateSelect');
+            const citySelect = document.getElementById('citySelect');
+            const citiesResult = document.getElementById('citiesResult');
+            
+            const selectedState = stateSelect.value;
+            
+            if (!selectedState) {
+                citySelect.innerHTML = '<option value="">Select a city</option>';
+                citiesResult.innerHTML = '';
+                return;
+            }
+            
+            try {
+                citiesResult.innerHTML = '<div class="loading">Loading cities...</div>';
+                
+                const cities = await getCitiesByStateName(selectedState);
+                
+                // Clear and populate city select
+                citySelect.innerHTML = '<option value="">Select a city</option>';
+                cities.forEach(city => {
+                    const option = document.createElement('option');
+                    option.value = city.name;
+                    option.textContent = city.name;
+                    citySelect.appendChild(option);
+                });
+                
+                citiesResult.innerHTML = `
+                    <div class="success">✅ Successfully loaded ${cities.length} cities for ${selectedState}</div>
+                    <div>Sample cities: ${cities.slice(0, 10).map(c => c.name).join(', ')}${cities.length > 10 ? '...' : ''}</div>
+                `;
+                
+            } catch (error) {
+                citiesResult.innerHTML = `<div class="error">❌ Error: ${error.message}</div>`;
+            }
+        };
+
+        // Auto-load states on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            loadStates();
+        });
+    </script>
+</body>
+</html>

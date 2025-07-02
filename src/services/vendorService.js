@@ -1,4 +1,5 @@
 import { sql } from '../config/database.js';
+import { processVendorFiles } from './fileUploadService.js';
 
 // Get all vendors
 export const getAllVendors = async () => {
@@ -6,45 +7,94 @@ export const getAllVendors = async () => {
     const vendors = await sql`
       SELECT
         id,
-        name,
-        company,
-        "companyName",
-        "companyType",
-        "onboardingDate",
-        email,
-        phone,
+        company_name,
+        company_type,
+        onboarding_date,
+        emails,
+        phones,
         address,
         country,
         state,
         city,
         username,
-        "gstNumber",
-        specialization,
-        "typeOfWork",
-        "isActive",
+        gst_number,
+        description,
+        services,
+        website,
+        type_of_work,
+        status,
+        files,
         rating,
-        "createdAt",
-        "updatedAt"
+        total_orders,
+        created_at,
+        updated_at
       FROM vendors
-      ORDER BY "createdAt" DESC
+      ORDER BY created_at DESC
     `;
 
     // Transform data to match UI expectations and format dates
-    return vendors.map(vendor => ({
-      ...vendor,
-      // Map database fields to UI expected fields
-      company_name: vendor.companyName || vendor.company || vendor.name || 'N/A',
-      emails: vendor.email ? [vendor.email] : [],
-      phones: vendor.phone ? [vendor.phone] : [],
-      company_type: vendor.companyType || 'N/A',
-      type_of_work: Array.isArray(vendor.typeOfWork) ? vendor.typeOfWork.join(', ') : (vendor.specialization || 'N/A'),
-      status: vendor.isActive ? 'Active' : 'Inactive',
-      totalOrders: vendor.totalOrders || 0,
-      // Format dates to strings to prevent React errors
-      onboardingDate: vendor.onboardingDate ? new Date(vendor.onboardingDate).toISOString().split('T')[0] : '',
-      createdAt: vendor.createdAt ? new Date(vendor.createdAt).toISOString().split('T')[0] : '',
-      updatedAt: vendor.updatedAt ? new Date(vendor.updatedAt).toISOString().split('T')[0] : ''
-    }));
+    return vendors.map(vendor => {
+      // Parse JSON fields safely
+      let emails = [];
+      let phones = [];
+      let services = [];
+      let files = {};
+
+      try {
+        emails = vendor.emails ? (typeof vendor.emails === 'string' ? JSON.parse(vendor.emails) : vendor.emails) : [];
+      } catch (e) {
+        console.warn('Error parsing emails:', e);
+        emails = [];
+      }
+
+      try {
+        phones = vendor.phones ? (typeof vendor.phones === 'string' ? JSON.parse(vendor.phones) : vendor.phones) : [];
+      } catch (e) {
+        console.warn('Error parsing phones:', e);
+        phones = [];
+      }
+
+      try {
+        services = vendor.services ? (typeof vendor.services === 'string' ? JSON.parse(vendor.services) : vendor.services) : [];
+      } catch (e) {
+        console.warn('Error parsing services:', e);
+        services = [];
+      }
+
+      try {
+        files = vendor.files ? (typeof vendor.files === 'string' ? JSON.parse(vendor.files) : vendor.files) : {};
+      } catch (e) {
+        console.warn('Error parsing files:', e);
+        files = {};
+      }
+
+      return {
+        id: vendor.id,
+        companyName: vendor.company_name || '',
+        companyType: vendor.company_type || 'Company',
+        onboardingDate: vendor.onboarding_date ? new Date(vendor.onboarding_date).toISOString().split('T')[0] : '',
+        emails: Array.isArray(emails) ? emails : [],
+        phones: Array.isArray(phones) ? phones : [],
+        email: Array.isArray(emails) && emails.length > 0 ? emails[0] : '',
+        phone: Array.isArray(phones) && phones.length > 0 ? phones[0] : '',
+        address: vendor.address || '',
+        country: vendor.country || '',
+        state: vendor.state || '',
+        city: vendor.city || '',
+        username: vendor.username || '',
+        gstNumber: vendor.gst_number || '',
+        description: vendor.description || '',
+        services: Array.isArray(services) ? services : [],
+        website: vendor.website || '',
+        typeOfWork: vendor.type_of_work || '',
+        status: vendor.status || 'Pending',
+        files: files,
+        rating: parseFloat(vendor.rating) || 0,
+        totalOrders: vendor.total_orders || 0,
+        createdAt: vendor.created_at ? new Date(vendor.created_at).toISOString().split('T')[0] : '',
+        updatedAt: vendor.updated_at ? new Date(vendor.updated_at).toISOString().split('T')[0] : ''
+      };
+    });
   } catch (error) {
     console.error('Error fetching vendors:', error);
     throw error;
@@ -188,39 +238,95 @@ const demoVendors = [
 // Get vendor by ID
 export const getVendorById = async (id) => {
   try {
-    // First try to get from database
+    // First try to get from database using correct schema
     const vendor = await sql`
       SELECT
         id,
-        name,
-        company,
-        "companyName",
-        "companyType",
-        "onboardingDate",
-        email,
-        phone,
+        company_name,
+        company_type,
+        onboarding_date,
+        emails,
+        phones,
         address,
         country,
         state,
         city,
         username,
-        "gstNumber",
-        specialization,
-        "typeOfWork",
-        "isActive",
+        gst_number,
+        description,
+        services,
+        website,
+        type_of_work,
+        status,
+        files,
         rating,
-        "createdAt",
-        "updatedAt"
+        total_orders,
+        created_at,
+        updated_at
       FROM vendors
       WHERE id = ${id}
     `;
 
     const vendorData = vendor[0];
 
-    // If found in database, return it
+    // If found in database, transform and return it
     if (vendorData) {
       console.log('✅ Vendor found in database:', vendorData);
-      return vendorData;
+
+      // Transform the data to match form expectations
+      let emails = [];
+      let phones = [];
+      let services = [];
+      let files = {};
+
+      try {
+        emails = vendorData.emails ? (typeof vendorData.emails === 'string' ? JSON.parse(vendorData.emails) : vendorData.emails) : [];
+      } catch (e) {
+        emails = [];
+      }
+
+      try {
+        phones = vendorData.phones ? (typeof vendorData.phones === 'string' ? JSON.parse(vendorData.phones) : vendorData.phones) : [];
+      } catch (e) {
+        phones = [];
+      }
+
+      try {
+        services = vendorData.services ? (typeof vendorData.services === 'string' ? JSON.parse(vendorData.services) : vendorData.services) : [];
+      } catch (e) {
+        services = [];
+      }
+
+      try {
+        files = vendorData.files ? (typeof vendorData.files === 'string' ? JSON.parse(vendorData.files) : vendorData.files) : {};
+      } catch (e) {
+        files = {};
+      }
+
+      return {
+        id: vendorData.id,
+        companyName: vendorData.company_name || '',
+        companyType: vendorData.company_type || 'Company',
+        onboardingDate: vendorData.onboarding_date ? new Date(vendorData.onboarding_date).toISOString().split('T')[0] : '',
+        emails: Array.isArray(emails) ? emails : [],
+        phones: Array.isArray(phones) ? phones : [],
+        address: vendorData.address || '',
+        country: vendorData.country || '',
+        state: vendorData.state || '',
+        city: vendorData.city || '',
+        username: vendorData.username || '',
+        gstNumber: vendorData.gst_number || '',
+        description: vendorData.description || '',
+        services: Array.isArray(services) ? services : [],
+        website: vendorData.website || '',
+        typeOfWork: vendorData.type_of_work || '',
+        status: vendorData.status || 'Pending',
+        files: files,
+        rating: parseFloat(vendorData.rating) || 0,
+        totalOrders: vendorData.total_orders || 0,
+        createdAt: vendorData.created_at,
+        updatedAt: vendorData.updated_at
+      };
     }
 
     // If not found in database, check demo data
@@ -249,6 +355,8 @@ export const getVendorById = async (id) => {
 // Create new vendor
 export const createVendor = async (vendorData) => {
   try {
+    console.log('🔄 Creating vendor with data:', vendorData);
+
     const {
       companyName,
       companyType,
@@ -269,51 +377,94 @@ export const createVendor = async (vendorData) => {
       files = {}
     } = vendorData;
 
+    // Process uploaded files
+    let processedFiles = {
+      gstFileUrl: null,
+      ndaFileUrl: null,
+      agreementFileUrl: null,
+      companyLogoUrl: null,
+      otherDocsUrls: []
+    };
+
+    try {
+      if (files && Object.keys(files).length > 0) {
+        console.log('📁 Processing vendor files...');
+        processedFiles = await processVendorFiles(files, companyName);
+        console.log('✅ Files processed:', processedFiles);
+      }
+    } catch (fileError) {
+      console.warn('⚠️ File processing failed, continuing without files:', fileError);
+    }
+
+    // Prepare data for database insertion using actual schema
+    console.log('📋 Form data breakdown:');
+    console.log('  - Company Name:', companyName);
+    console.log('  - Company Type:', companyType);
+    console.log('  - Onboarding Date:', onboardingDate);
+    console.log('  - Emails:', emails);
+    console.log('  - Phones:', phones);
+    console.log('  - Address:', address);
+    console.log('  - Country:', country);
+    console.log('  - State:', state);
+    console.log('  - City:', city);
+    console.log('  - Username:', username);
+    console.log('  - GST Number:', gstNumber);
+    console.log('  - Description:', description);
+    console.log('  - Services:', services);
+    console.log('  - Website:', website);
+    console.log('  - Type of Work:', typeOfWork);
+    console.log('  - Status:', status);
+    console.log('  - Files:', processedFiles);
+
     const vendor = await sql`
       INSERT INTO vendors (
-        name,
-        company,
-        "companyName",
-        "companyType",
-        "onboardingDate",
-        email,
-        phone,
+        company_name,
+        company_type,
+        onboarding_date,
+        emails,
+        phones,
         address,
         country,
         state,
         city,
         username,
-        "gstNumber",
-        specialization,
-        "typeOfWork",
-        "isActive",
-        "updatedAt",
-        "createdById"
+        gst_number,
+        description,
+        services,
+        website,
+        type_of_work,
+        status,
+        files,
+        rating,
+        total_orders
       ) VALUES (
-        ${companyName},
-        ${companyName},
-        ${companyName},
-        ${companyType},
-        ${onboardingDate},
-        ${emails[0] || ''},
-        ${phones[0] || ''},
-        ${address},
-        ${country},
-        ${state},
-        ${city},
-        ${username},
-        ${gstNumber},
-        ${description},
-        ${JSON.stringify(services)},
-        ${status === 'Active'},
-        NOW(),
-        'admin'
+        ${companyName || ''},
+        ${companyType || null},
+        ${onboardingDate ? new Date(onboardingDate) : null},
+        ${JSON.stringify(emails || [])},
+        ${JSON.stringify(phones || [])},
+        ${address || null},
+        ${country || null},
+        ${state || null},
+        ${city || null},
+        ${username || null},
+        ${gstNumber || null},
+        ${description || null},
+        ${JSON.stringify(Array.isArray(services) ? services : (services ? [services] : []))},
+        ${website || null},
+        ${Array.isArray(services) ? services.join(', ') : (typeOfWork || services || null)},
+        ${status || 'Pending'},
+        ${JSON.stringify(processedFiles)},
+        ${0},
+        ${0}
       )
       RETURNING *
     `;
+
+    console.log('✅ Vendor created successfully:', vendor[0]);
     return vendor[0];
   } catch (error) {
-    console.error('Error creating vendor:', error);
+    console.error('❌ Error creating vendor:', error);
     throw error;
   }
 };

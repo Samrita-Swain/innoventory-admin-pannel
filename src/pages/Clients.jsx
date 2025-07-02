@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { PlusIcon, EyeIcon, PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
 import DataTable from '../components/DataTable/DataTable';
 import FileUpload from '../components/FileUpload/FileUpload';
+import { getAllStates, getCitiesByStateName } from '../services/locationService';
 
 // Country-State-City data
 const countryStateCity = {
@@ -62,6 +63,8 @@ const Clients = () => {
   });
   const [availableStates, setAvailableStates] = useState([]);
   const [availableCities, setAvailableCities] = useState([]);
+  const [loadingStates, setLoadingStates] = useState(false);
+  const [loadingCities, setLoadingCities] = useState(false);
 
   // Demo data for display (not saved to database)
   const [clients, setClients] = useState([]);
@@ -163,7 +166,39 @@ const Clients = () => {
     };
 
     loadClients();
+    loadStates();
   }, []);
+
+  // Load states from local JSON
+  const loadStates = async () => {
+    try {
+      setLoadingStates(true);
+      console.log('🔄 Loading states from local JSON...');
+      const states = await getAllStates();
+      setAvailableStates(states);
+      console.log(`✅ Loaded ${states.length} states`);
+    } catch (error) {
+      console.error('❌ Error loading states:', error);
+    } finally {
+      setLoadingStates(false);
+    }
+  };
+
+  // Load cities for selected state
+  const loadCities = async (stateName) => {
+    try {
+      setLoadingCities(true);
+      console.log(`🔄 Loading cities for state ${stateName}...`);
+      const cities = await getCitiesByStateName(stateName);
+      setAvailableCities(cities);
+      console.log(`✅ Loaded ${cities.length} cities`);
+    } catch (error) {
+      console.error('❌ Error loading cities:', error);
+      setAvailableCities([]);
+    } finally {
+      setLoadingCities(false);
+    }
+  };
 
   // Add demo clients to database
   const addDemoClientsToDatabase = async () => {
@@ -391,31 +426,41 @@ const Clients = () => {
       ...prev,
       [name]: value
     }));
+
+    // Handle country change
+    if (name === 'country') {
+      if (value === 'India') {
+        // Load states for India from local JSON
+        loadStates();
+      } else {
+        // For other countries, use fallback data
+        setAvailableStates(Object.keys(countryStateCity[value] || {}));
+      }
+      setAvailableCities([]);
+      setFormData(prev => ({
+        ...prev,
+        state: '',
+        city: ''
+      }));
+    }
+
+    // Handle state change
+    if (name === 'state') {
+      if (formData.country === 'India') {
+        // Load cities from local JSON for Indian states
+        loadCities(value);
+      } else {
+        // Use fallback data for other countries
+        setAvailableCities(countryStateCity[formData.country]?.[value] || []);
+      }
+      setFormData(prev => ({
+        ...prev,
+        city: ''
+      }));
+    }
   };
 
-  const handleCountryChange = (e) => {
-    const selectedCountry = e.target.value;
-    setFormData(prev => ({
-      ...prev,
-      country: selectedCountry,
-      state: '',
-      city: ''
-    }));
 
-    setAvailableStates(Object.keys(countryStateCity[selectedCountry] || {}));
-    setAvailableCities([]);
-  };
-
-  const handleStateChange = (e) => {
-    const selectedState = e.target.value;
-    setFormData(prev => ({
-      ...prev,
-      state: selectedState,
-      city: ''
-    }));
-
-    setAvailableCities(countryStateCity[formData.country]?.[selectedState] || []);
-  };
 
   const addEmailField = () => {
     setFormData(prev => ({
@@ -513,45 +558,106 @@ const Clients = () => {
     setUploadedFiles(files);
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log('Form Data:', formData);
-    console.log('Uploaded Files:', uploadedFiles);
-    // Here you would typically send the data to your backend
-    setShowAddForm(false);
-    // Reset form
-    setFormData({
-      onboardingDate: '',
-      companyType: '',
-      companyName: '',
-      emails: [''],
-      phones: [''],
-      address: '',
-      country: '',
-      state: '',
-      city: '',
-      username: '',
-      gstNumber: '',
-      dpiitRegistered: '',
-      validTill: '',
-      website: '',
-      description: '',
-      creditLimit: '',
-      paymentTerms: ''
-    });
-    setUploadedFiles({
-      dpiitCertificate: [],
-      tdsFile: [],
-      gstFile: [],
-      ndaFile: [],
-      agreementFile: [],
-      quotationFile: [],
-      panCardFile: [],
-      udhyamRegistrationFile: [],
-      othersFile: []
-    });
-    setAvailableStates([]);
-    setAvailableCities([]);
+
+    // Validation
+    if (!formData.companyName || formData.companyName.trim() === '') {
+      alert('❌ Company name is required');
+      return;
+    }
+
+    if (!formData.emails[0] || formData.emails[0].trim() === '') {
+      alert('❌ At least one email is required');
+      return;
+    }
+
+    // Email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const invalidEmails = formData.emails.filter(email => email && !emailRegex.test(email));
+    if (invalidEmails.length > 0) {
+      alert('❌ Please enter valid email addresses');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      console.log('🚀 Submitting client form...');
+      console.log('📋 Form data:', formData);
+      console.log('📁 Uploaded files:', uploadedFiles);
+
+      // Create client object
+      const clientData = {
+        companyName: formData.companyName,
+        companyType: formData.companyType,
+        onboardingDate: formData.onboardingDate,
+        emails: formData.emails.filter(email => email.trim() !== ''),
+        phones: formData.phones.filter(phone => phone.trim() !== ''),
+        address: formData.address,
+        country: formData.country,
+        state: formData.state,
+        city: formData.city,
+        dpiitRegistered: formData.dpiitRegistered === 'yes',
+        dpiitNumber: formData.dpiitRegistered === 'yes' ? formData.validTill : null,
+        files: uploadedFiles,
+        status: 'Active'
+      };
+
+      console.log('💾 Sending client data to service:', clientData);
+
+      // Save to database
+      const { createClient } = await import('../services/clientService');
+      const result = await createClient(clientData);
+      console.log('✅ Client created successfully:', result);
+
+      // Reload clients list
+      const { getAllClients } = await import('../services/clientService');
+      const updatedClients = await getAllClients();
+      setClients(updatedClients);
+
+      // Reset form
+      setFormData({
+        onboardingDate: '',
+        companyType: '',
+        companyName: '',
+        emails: [''],
+        phones: [''],
+        address: '',
+        country: '',
+        state: '',
+        city: '',
+        username: '',
+        gstNumber: '',
+        dpiitRegistered: '',
+        validTill: '',
+        website: '',
+        description: '',
+        creditLimit: '',
+        paymentTerms: ''
+      });
+      setUploadedFiles({
+        dpiitCertificate: [],
+        tdsFile: [],
+        gstFile: [],
+        ndaFile: [],
+        agreementFile: [],
+        quotationFile: [],
+        panCardFile: [],
+        udhyamRegistrationFile: [],
+        othersFile: []
+      });
+      setAvailableStates([]);
+      setAvailableCities([]);
+      setShowAddForm(false);
+
+      // Success notification
+      alert('✅ Client added successfully! All files have been saved locally.');
+    } catch (err) {
+      console.error('❌ Error creating client:', err);
+      alert(`❌ Failed to create client: ${err.message || 'Please try again.'}`);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -755,7 +861,7 @@ const Clients = () => {
                       <select
                         name="country"
                         value={formData.country}
-                        onChange={handleCountryChange}
+                        onChange={handleInputChange}
                         required
                         className="input-field"
                       >
@@ -775,15 +881,17 @@ const Clients = () => {
                       <select
                         name="state"
                         value={formData.state}
-                        onChange={handleStateChange}
+                        onChange={handleInputChange}
                         required
                         className="input-field"
                         disabled={!formData.country}
                       >
-                        <option value="">Select State</option>
+                        <option value="">
+                          {loadingStates ? 'Loading states...' : 'Select State'}
+                        </option>
                         {availableStates.map(state => (
-                          <option key={state} value={state}>
-                            {state}
+                          <option key={state.id || state} value={state.name || state}>
+                            {state.name || state}
                           </option>
                         ))}
                       </select>
@@ -801,10 +909,12 @@ const Clients = () => {
                         className="input-field"
                         disabled={!formData.state}
                       >
-                        <option value="">Select City</option>
+                        <option value="">
+                          {loadingCities ? 'Loading cities...' : 'Select City'}
+                        </option>
                         {availableCities.map(city => (
-                          <option key={city} value={city}>
-                            {city}
+                          <option key={city.id || city} value={city.name || city}>
+                            {city.name || city}
                           </option>
                         ))}
                       </select>

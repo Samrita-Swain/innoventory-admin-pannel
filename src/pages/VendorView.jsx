@@ -15,6 +15,7 @@ import {
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 import { getVendorById, updateVendor } from '../services/vendorService';
+import FileViewer from '../components/FileViewer/FileViewer';
 
 const VendorView = () => {
   const { id } = useParams();
@@ -753,29 +754,13 @@ const VendorView = () => {
               </div>
             </div>
 
-            {/* Other Documents */}
+            {/* Uploaded Files */}
             <div className="card">
-              <h3 className="text-lg font-semibold text-gray-900 mb-6">Other Documents</h3>
-              {vendor.documents && vendor.documents.length > 0 ? (
-                <div className="space-y-3">
-                  {vendor.documents.map((doc, index) => (
-                    <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                      <div>
-                        <p className="text-sm font-medium text-gray-900">{doc.name}</p>
-                        <p className="text-xs text-gray-500">{doc.size} • {doc.uploadDate}</p>
-                      </div>
-                      <button className="text-blue-600 hover:text-blue-900">
-                        <DocumentArrowDownIcon className="h-4 w-4" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-8 text-gray-500">
-                  <DocumentArrowDownIcon className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-                  <p className="text-sm">No other documents uploaded</p>
-                </div>
-              )}
+              <FileViewer
+                files={vendor.files || {}}
+                title="Uploaded Documents"
+                readOnly={true}
+              />
             </div>
           </div>
 

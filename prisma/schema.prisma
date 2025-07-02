@@ -1,9 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -13,24 +7,277 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// Enums
-enum OrderType {
-  DEVELOPMENT
-  MARKETING
-  DESIGN
-  CONSULTING
-  LEGAL
+model activity_logs {
+  id          String   @id
+  action      String
+  description String
+  entityType  String
+  entityId    String
+  userId      String
+  orderId     String?
+  createdAt   DateTime @default(now())
+  users       users    @relation(fields: [userId], references: [id])
+}
+
+model clients {
+  id               Int       @id @default(autoincrement())
+  company_name     String    @db.VarChar(255)
+  company_type     String?   @db.VarChar(100)
+  onboarding_date  DateTime? @db.Date
+  email            String?   @db.VarChar(255)
+  phone            String?   @db.VarChar(20)
+  emails           Json?     @default("[]")
+  phones           Json?     @default("[]")
+  address          String?
+  country          String?   @db.VarChar(100)
+  state            String?   @db.VarChar(100)
+  city             String?   @db.VarChar(100)
+  dpiit_registered Boolean?  @default(false)
+  dpiit_number     String?   @db.VarChar(100)
+  files            Json?     @default("{}")
+  status           String?   @default("Active") @db.VarChar(50)
+  created_at       DateTime? @default(now()) @db.Timestamp(6)
+  updated_at       DateTime? @default(now()) @db.Timestamp(6)
+}
+
+model customers {
+  id                    String    @id
+  name                  String
+  email                 String    @unique
+  phone                 String?
+  company               String?
+  country               String
+  address               String?
+  isActive              Boolean   @default(true)
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime
+  createdById           String
+  agreementFileUrl      String?
+  city                  String?
+  clientOnboardingDate  DateTime?
+  companyName           String?
+  companyType           String?
+  dpiitCertificateUrl   String?
+  dpiitRegister         String?
+  dpiitValidTill        DateTime?
+  gstFileUrl            String?
+  gstNumber             String?
+  individualName        String?
+  ndaFileUrl            String?
+  otherDocsUrls         String[]
+  panCardFileUrl        String?
+  pointOfContact        String?
+  quotationFileUrl      String?
+  state                 String?
+  tdsFileUrl            String?
+  udhyamRegistrationUrl String?
+  username              String?
+  users                 users     @relation(fields: [createdById], references: [id])
+}
+
+model invoices {
+  id            String        @id
+  invoiceNumber String        @unique
+  orderId       String
+  amount        Float
+  paidAmount    Float         @default(0)
+  currency      String        @default("INR")
+  status        InvoiceStatus @default(PENDING)
+  dueDate       DateTime
+  paidDate      DateTime?
+  imageUrl      String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime
+}
+
+model orders {
+  id                                           Int       @id @default(autoincrement())
+  orderreferencenumber                         String    @unique @db.VarChar(100)
+  order_reference_number                       String?   @db.VarChar(100)
+  orderonboardingdate                          DateTime? @db.Date
+  order_onboarding_date                        DateTime? @db.Date
+  client                                       String?   @db.VarChar(255)
+  typeofwork                                   String?   @db.VarChar(255)
+  type_of_work                                 String?   @db.VarChar(255)
+  vendorname                                   String?   @db.VarChar(255)
+  vendor_name                                  String?   @db.VarChar(255)
+  dateofworkcompletionexpected                 DateTime? @db.Date
+  date_of_work_completion_expected             DateTime? @db.Date
+  totalinvoicevalue                            Decimal?  @db.Decimal(15, 2)
+  total_invoice_value                          Decimal?  @db.Decimal(15, 2)
+  totalvaluegstgovtfees                        Decimal?  @db.Decimal(15, 2)
+  total_value_gst_govt_fees                    Decimal?  @db.Decimal(15, 2)
+  dateofpaymentexpected                        DateTime? @db.Date
+  date_of_payment_expected                     DateTime? @db.Date
+  dateofonboardingvendor                       DateTime? @db.Date
+  date_of_onboarding_vendor                    DateTime? @db.Date
+  currentstatus                                String?   @default("Pending") @db.VarChar(100)
+  current_status                               String?   @default("Pending") @db.VarChar(100)
+  statuscomments                               String?
+  status_comments                              String?
+  dateofstatuschange                           DateTime? @db.Date
+  date_of_status_change                        DateTime? @db.Date
+  dateofworkcompletionexpectedfromvendor       DateTime? @db.Date
+  date_of_work_completion_expected_from_vendor DateTime? @db.Date
+  amounttobepaidtovendor                       Decimal?  @db.Decimal(15, 2)
+  amount_to_be_paid_to_vendor                  Decimal?  @db.Decimal(15, 2)
+  amountpaidtovendor                           Decimal?  @default(0) @db.Decimal(15, 2)
+  amount_paid_to_vendor                        Decimal?  @default(0) @db.Decimal(15, 2)
+  statushistory                                Json?     @default("[]")
+  status_history                               Json?     @default("[]")
+  documentsprovidedbyclient                    Json?     @default("[]")
+  documents_provided_by_client                 Json?     @default("[]")
+  documentsprovidedbyvendor                    Json?     @default("[]")
+  documents_provided_by_vendor                 Json?     @default("[]")
+  invoicefromvendor                            Json?     @default("[]")
+  invoice_from_vendor                          Json?     @default("[]")
+  created_at                                   DateTime? @default(now()) @db.Timestamp(6)
+  updated_at                                   DateTime? @default(now()) @db.Timestamp(6)
+}
+
+model sub_admins {
+  id                     Int       @id @default(autoincrement())
+  name                   String    @db.VarChar(255)
+  email                  String    @unique @db.VarChar(255)
+  username               String?   @unique @db.VarChar(255)
+  phone                  String?   @db.VarChar(20)
+  subadminonboardingdate DateTime? @db.Date
+  onboarding_date        DateTime? @db.Date
+  address                String?
+  country                String?   @db.VarChar(100)
+  state                  String?   @db.VarChar(100)
+  city                   String?   @db.VarChar(100)
+  termofwork             String?   @db.VarChar(100)
+  term_of_work           String?   @db.VarChar(100)
+  role                   String?   @db.VarChar(100)
+  department             String?   @db.VarChar(100)
+  pan_number             String?   @db.VarChar(20)
+  pannumber              String?   @db.VarChar(20)
+  permissions            Json?     @default("[]")
+  files                  Json?     @default("{}")
+  uploadedfiles          Json?     @default("{}")
+  status                 String?   @default("Active") @db.VarChar(50)
+  last_login             DateTime? @db.Timestamp(6)
+  lastlogin              String?   @db.VarChar(100)
+  createddate            DateTime? @db.Date
+  created_at             DateTime? @default(now()) @db.Timestamp(6)
+  updated_at             DateTime? @default(now()) @db.Timestamp(6)
+}
+
+model type_of_work {
+  id           Int       @id @default(autoincrement())
+  name         String    @unique @db.VarChar(255)
+  description  String?
+  status       String?   @default("Active") @db.VarChar(50)
+  createddate  DateTime? @default(dbgenerated("CURRENT_DATE")) @db.Date
+  created_date DateTime? @default(dbgenerated("CURRENT_DATE")) @db.Date
+  isActive     Boolean?  @default(true)
+  created_at   DateTime? @default(now()) @db.Timestamp(6)
+  updated_at   DateTime? @default(now()) @db.Timestamp(6)
+}
+
+model user_permissions {
+  id         String     @id
+  userId     String
+  permission Permission
+  createdAt  DateTime   @default(now())
+  users      users      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, permission])
+}
+
+model users {
+  id                     String             @id
+  email                  String             @unique
+  password               String
+  isActive               Boolean            @default(true)
+  createdAt              DateTime           @default(now())
+  updatedAt              DateTime
+  createdById            String?
+  name                   String
+  role                   UserRole           @default(SUB_ADMIN)
+  address                String?
+  city                   String?
+  country                String?
+  employmentAgreementUrl String?
+  ndaFileUrl             String?
+  otherDocsUrls          String[]
+  panCardFileUrl         String?
+  panNumber              String?
+  state                  String?
+  subAdminOnboardingDate DateTime?
+  tdsFileUrl             String?
+  termOfWork             String?
+  username               String?
+  activity_logs          activity_logs[]
+  customers              customers[]
+  user_permissions       user_permissions[]
+  users                  users?             @relation("usersTousers", fields: [createdById], references: [id])
+  other_users            users[]            @relation("usersTousers")
+}
+
+model vendors {
+  id              Int       @id @default(autoincrement())
+  company_name    String    @db.VarChar(255)
+  company_type    String?   @db.VarChar(100)
+  onboarding_date DateTime? @db.Date
+  onboardingdate  DateTime? @db.Date
+  emails          Json?     @default("[]")
+  phones          Json?     @default("[]")
+  address         String?
+  country         String?   @db.VarChar(100)
+  state           String?   @db.VarChar(100)
+  city            String?   @db.VarChar(100)
+  username        String?   @db.VarChar(255)
+  gst_number      String?   @db.VarChar(50)
+  description     String?
+  services        Json?     @default("[]")
+  website         String?   @db.VarChar(255)
+  type_of_work    String?   @db.VarChar(255)
+  status          String?   @default("Active") @db.VarChar(50)
+  files           Json?     @default("{}")
+  rating          Decimal?  @default(0.00) @db.Decimal(3, 2)
+  total_orders    Int?      @default(0)
+  totalorders     Int?      @default(0)
+  created_at      DateTime? @default(now()) @db.Timestamp(6)
+  updated_at      DateTime? @default(now()) @db.Timestamp(6)
+}
+
+enum InvoiceStatus {
+  PENDING
+  PAID
+  OVERDUE
+  CANCELLED
 }
 
 enum OrderStatus {
-  PENDING
+  YET_TO_START
   IN_PROGRESS
+  PENDING_WITH_CLIENT
+  PENDING_PAYMENT
   COMPLETED
+  CLOSED
   CANCELLED
-  ON_HOLD
 }
 
-enum OrderPriority {
+enum OrderType {
+  PATENT
+  TRADEMARK
+  COPYRIGHT
+  DESIGN
+}
+
+enum Permission {
+  MANAGE_USERS
+  MANAGE_CUSTOMERS
+  MANAGE_VENDORS
+  MANAGE_ORDERS
+  VIEW_ANALYTICS
+  MANAGE_PAYMENTS
+  VIEW_REPORTS
+}
+
+enum Priority {
   LOW
   MEDIUM
   HIGH
@@ -40,158 +287,4 @@ enum OrderPriority {
 enum UserRole {
   ADMIN
   SUB_ADMIN
-  USER
-}
-
-// Models
-model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  name      String?
-  role      UserRole @default(USER)
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Relations
-  createdVendors Vendor[]
-  assignedOrders Order[]
-
-  @@map("users")
-}
-
-model Vendor {
-  id             String    @id @default(cuid())
-  name           String
-  email          String    @unique
-  phone          String?
-  company        String
-  country        String
-  address        String?
-  specialization String?
-  onboardingDate DateTime?
-  companyType    String?
-  companyName    String?
-  individualName String?
-  city           String?
-  state          String?
-  username       String?
-  gstNumber      String?
-  startupBenefits String?
-  typeOfWork     String[]
-  pointsOfContact String?
-  gstFileUrl     String?
-  ndaFileUrl     String?
-  agreementFileUrl String?
-  companyLogoUrl String?
-  otherDocsUrls  String[]
-  isActive       Boolean   @default(true)
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
-  createdById    String
-  rating         Float?
-
-  // Relations
-  createdBy User    @relation(fields: [createdById], references: [id])
-  orders    Order[]
-
-  @@map("vendors")
-}
-
-model Customer {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  name      String?
-  phone     String?
-  company   String?
-  country   String?
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  // Relations
-  orders Order[]
-
-  @@map("customers")
-}
-
-model Client {
-  id               Int      @id @default(autoincrement())
-  companyName      String   @map("company_name")
-  companyType      String?  @map("company_type")
-  onboardingDate   DateTime? @map("onboarding_date")
-  emails           Json?
-  phones           Json?
-  address          String?
-  country          String?
-  state            String?
-  city             String?
-  dpiitRegistered  Boolean? @default(false) @map("dpiit_registered")
-  dpiitNumber      String?  @map("dpiit_number")
-  files            Json?
-  status           String?
-  createdAt        DateTime? @default(now()) @map("created_at")
-  updatedAt        DateTime? @updatedAt @map("updated_at")
-
-  @@map("clients")
-}
-
-model Order {
-  id            String        @id @default(cuid())
-  referenceNumber String      @unique
-  title         String
-  description   String?
-  type          OrderType
-  status        OrderStatus
-  country       String
-  priority      OrderPriority
-  startDate     DateTime?
-  dueDate       DateTime?
-  completedDate DateTime?
-  amount        Float?
-  paidAmount    Float         @default(0)
-  currency      String        @default("USD")
-  customerId    String
-  vendorId      String?
-  assignedToId  String
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
-
-  // Relations
-  customer   Customer @relation(fields: [customerId], references: [id])
-  vendor     Vendor?  @relation(fields: [vendorId], references: [id])
-  assignedTo User     @relation(fields: [assignedToId], references: [id])
-
-  @@map("orders")
-}
-
-model SubAdmin {
-  id             Int       @id @default(autoincrement())
-  name           String
-  email          String    @unique
-  onboardingDate DateTime? @map("onboarding_date")
-  address        String?
-  country        String?
-  state          String?
-  city           String?
-  username       String?
-  panNumber      String?   @map("pan_number")
-  termOfWork     String?   @map("term_of_work")
-  files          Json?
-  status         String?
-  createdAt      DateTime? @default(now()) @map("created_at")
-  updatedAt      DateTime? @updatedAt @map("updated_at")
-
-  @@map("sub_admins")
-}
-
-model TypeOfWork {
-  id          Int       @id @default(autoincrement())
-  name        String    @unique
-  description String?
-  isActive    Boolean   @default(true)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-
-  @@map("type_of_work")
 }
