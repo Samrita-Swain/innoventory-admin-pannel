@@ -47,6 +47,8 @@ const demoTypeOfWork = [
 // Get all type of work entries
 export const getAllTypeOfWork = async () => {
   try {
+    console.log('🔄 Fetching all type of work from database...');
+
     // First try to get from database
     const typeOfWork = await sql`
       SELECT
@@ -54,23 +56,32 @@ export const getAllTypeOfWork = async () => {
         name,
         description,
         "isActive",
-        "createdAt",
-        "updatedAt"
+        status,
+        created_at,
+        updated_at
       FROM type_of_work
-      ORDER BY "createdAt" DESC
+      ORDER BY created_at DESC
     `;
 
-    // If found in database, return it
+    // If found in database, return it with proper field mapping
     if (typeOfWork && typeOfWork.length > 0) {
-      console.log('✅ Type of work found in database:', typeOfWork);
-      return typeOfWork;
+      console.log('✅ Type of work found in database:', typeOfWork.length, 'entries');
+      return typeOfWork.map(work => ({
+        id: work.id,
+        name: work.name,
+        description: work.description || '',
+        isActive: work.isActive !== false && work.status !== 'Inactive',
+        status: work.status || (work.isActive ? 'Active' : 'Inactive'),
+        createdAt: work.created_at,
+        updatedAt: work.updated_at
+      }));
     }
 
     // If database is empty, return demo data
     console.log('✅ Using demo type of work data');
     return demoTypeOfWork;
   } catch (error) {
-    console.error('Error fetching type of work:', error);
+    console.error('❌ Error fetching type of work:', error);
 
     // Fallback to demo data if database error
     console.log('✅ Using demo type of work as fallback');
@@ -81,33 +92,43 @@ export const getAllTypeOfWork = async () => {
 // Get active type of work entries (for dropdowns)
 export const getActiveTypeOfWork = async () => {
   try {
-    // First try to get from database
+    console.log('🔄 Fetching active type of work from database...');
+
+    // First try to get from database - handle both isActive and status fields
     const typeOfWork = await sql`
       SELECT
         id,
         name,
-        description
+        description,
+        "isActive",
+        status
       FROM type_of_work
-      WHERE "isActive" = true
+      WHERE ("isActive" = true OR "isActive" IS NULL)
+        AND (status IS NULL OR status != 'Inactive')
       ORDER BY name ASC
     `;
 
     // If found in database, return it
     if (typeOfWork && typeOfWork.length > 0) {
-      console.log('✅ Active type of work found in database:', typeOfWork);
-      return typeOfWork;
+      console.log('✅ Active type of work found in database:', typeOfWork.length, 'entries');
+      return typeOfWork.map(work => ({
+        id: work.id,
+        name: work.name,
+        description: work.description || '',
+        isActive: work.isActive !== false && work.status !== 'Inactive'
+      }));
     }
 
     // If database is empty, return active demo data
     const activeDemoData = demoTypeOfWork.filter(work => work.isActive);
-    console.log('✅ Using active demo type of work data');
+    console.log('✅ Using active demo type of work data:', activeDemoData.length, 'entries');
     return activeDemoData;
   } catch (error) {
-    console.error('Error fetching active type of work:', error);
+    console.error('❌ Error fetching active type of work:', error);
 
     // Fallback to demo data if database error
     const activeDemoData = demoTypeOfWork.filter(work => work.isActive);
-    console.log('✅ Using active demo type of work as fallback');
+    console.log('✅ Using active demo type of work as fallback:', activeDemoData.length, 'entries');
     return activeDemoData;
   }
 };
@@ -211,42 +232,21 @@ export const updateTypeOfWork = async (id, typeOfWorkData) => {
       isActive
     } = typeOfWorkData;
 
-    // Build update fields dynamically
-    const updateFields = [];
-    const updateValues = [];
+    console.log('🔄 Updating type of work with data:', { name, description, isActive });
 
-    if (name !== undefined) {
-      updateFields.push('name = $' + (updateValues.length + 1));
-      updateValues.push(name);
-    }
+    // Use a simpler, more reliable update approach
+    console.log('🔄 Updating type of work fields:', { name, description, isActive });
 
-    if (description !== undefined) {
-      updateFields.push('description = $' + (updateValues.length + 1));
-      updateValues.push(description);
-    }
-
-    if (isActive !== undefined) {
-      updateFields.push('"isActive" = $' + (updateValues.length + 1));
-      updateValues.push(isActive);
-    }
-
-    // Always update the updatedAt field
-    updateFields.push('"updatedAt" = CURRENT_TIMESTAMP');
-
-    if (updateFields.length === 1) { // Only updatedAt
-      throw new Error('No fields to update');
-    }
-
-    // Build the SQL query
-    const query = `
+    const typeOfWork = await sql`
       UPDATE type_of_work SET
-        ${updateFields.join(', ')}
-      WHERE id = $${updateValues.length + 1}
+        name = ${name || null},
+        description = ${description || null},
+        "isActive" = ${isActive !== undefined ? isActive : true},
+        status = ${isActive !== undefined ? (isActive ? 'Active' : 'Inactive') : 'Active'},
+        updated_at = CURRENT_TIMESTAMP
+      WHERE id = ${id}
       RETURNING *
     `;
-    updateValues.push(id);
-
-    const typeOfWork = await sql.unsafe(query, updateValues);
 
     if (typeOfWork.length === 0) {
       throw new Error(`Type of work with id ${id} not found`);
@@ -264,17 +264,26 @@ export const updateTypeOfWork = async (id, typeOfWorkData) => {
 // Update type of work status
 export const updateTypeOfWorkStatus = async (id, status) => {
   try {
+    console.log(`🔄 Updating type of work status for ID ${id} to: ${status}`);
+
     const isActive = status === 'Active'; // Convert text to boolean
     const typeOfWork = await sql`
       UPDATE type_of_work SET
         "isActive" = ${isActive},
-        "updatedAt" = CURRENT_TIMESTAMP
+        status = ${status},
+        updated_at = CURRENT_TIMESTAMP
       WHERE id = ${id}
       RETURNING *
     `;
+
+    if (typeOfWork.length === 0) {
+      throw new Error(`Type of work with ID ${id} not found`);
+    }
+
+    console.log('✅ Type of work status updated successfully:', typeOfWork[0]);
     return typeOfWork[0];
   } catch (error) {
-    console.error('Error updating type of work status:', error);
+    console.error('❌ Error updating type of work status:', error);
     throw error;
   }
 };

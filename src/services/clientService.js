@@ -279,6 +279,9 @@ export const createClient = async (clientData) => {
 // Update client
 export const updateClient = async (id, clientData) => {
   try {
+    console.log('🔄 Updating client with ID:', id);
+    console.log('📝 Client data received:', clientData);
+
     const {
       companyName,
       companyType,
@@ -295,28 +298,47 @@ export const updateClient = async (id, clientData) => {
       status
     } = clientData;
 
+    // Process uploaded files if any
+    let processedFiles = files || {};
+    try {
+      if (files && Object.keys(files).length > 0) {
+        console.log('📁 Processing client files for update...');
+        processedFiles = await processClientFiles(files, companyName);
+        console.log('✅ Files processed for update:', processedFiles);
+      }
+    } catch (fileError) {
+      console.warn('⚠️ File processing failed during update, using existing files:', fileError);
+    }
+
+    console.log('💾 Executing database update...');
     const client = await sql`
       UPDATE clients SET
-        company_name = ${companyName},
-        company_type = ${companyType},
-        onboarding_date = ${onboardingDate},
-        emails = ${JSON.stringify(emails)},
-        phones = ${JSON.stringify(phones)},
-        address = ${address},
-        country = ${country},
-        state = ${state},
-        city = ${city},
-        dpiit_registered = ${dpiitRegistered},
-        dpiit_number = ${dpiitNumber},
-        files = ${JSON.stringify(files)},
-        status = ${status},
+        company_name = ${companyName || null},
+        company_type = ${companyType || null},
+        onboarding_date = ${onboardingDate ? new Date(onboardingDate) : null},
+        emails = ${JSON.stringify(emails || [])},
+        phones = ${JSON.stringify(phones || [])},
+        address = ${address || null},
+        country = ${country || null},
+        state = ${state || null},
+        city = ${city || null},
+        dpiit_registered = ${dpiitRegistered || false},
+        dpiit_number = ${dpiitNumber || null},
+        files = ${JSON.stringify(processedFiles)},
+        status = ${status || 'Active'},
         updated_at = CURRENT_TIMESTAMP
       WHERE id = ${id}
       RETURNING *
     `;
+
+    if (client.length === 0) {
+      throw new Error(`Client with ID ${id} not found`);
+    }
+
+    console.log('✅ Client updated successfully:', client[0]);
     return client[0];
   } catch (error) {
-    console.error('Error updating client:', error);
+    console.error('❌ Error updating client:', error);
     throw error;
   }
 };

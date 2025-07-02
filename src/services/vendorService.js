@@ -70,8 +70,11 @@ export const getAllVendors = async () => {
 
       return {
         id: vendor.id,
+        // Keep both formats for compatibility
         companyName: vendor.company_name || '',
+        company_name: vendor.company_name || '',
         companyType: vendor.company_type || 'Company',
+        company_type: vendor.company_type || 'Company',
         onboardingDate: vendor.onboarding_date ? new Date(vendor.onboarding_date).toISOString().split('T')[0] : '',
         emails: Array.isArray(emails) ? emails : [],
         phones: Array.isArray(phones) ? phones : [],
@@ -87,10 +90,12 @@ export const getAllVendors = async () => {
         services: Array.isArray(services) ? services : [],
         website: vendor.website || '',
         typeOfWork: vendor.type_of_work || '',
+        type_of_work: vendor.type_of_work || '',
         status: vendor.status || 'Pending',
         files: files,
         rating: parseFloat(vendor.rating) || 0,
         totalOrders: vendor.total_orders || 0,
+        total_orders: vendor.total_orders || 0,
         createdAt: vendor.created_at ? new Date(vendor.created_at).toISOString().split('T')[0] : '',
         updatedAt: vendor.updated_at ? new Date(vendor.updated_at).toISOString().split('T')[0] : ''
       };

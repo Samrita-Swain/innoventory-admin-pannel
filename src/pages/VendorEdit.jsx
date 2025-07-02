@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeftIcon } from '@heroicons/react/24/outline';
 import FileUpload from '../components/FileUpload/FileUpload';
 import { getVendorById, updateVendor } from '../services/vendorService';
+import { getAllStates, getCitiesByStateName } from '../services/locationService';
 
 const VendorEdit = () => {
   const { id } = useParams();
@@ -53,6 +54,8 @@ const VendorEdit = () => {
 
   const [availableStates, setAvailableStates] = useState([]);
   const [availableCities, setAvailableCities] = useState([]);
+  const [loadingStates, setLoadingStates] = useState(false);
+  const [loadingCities, setLoadingCities] = useState(false);
 
   useEffect(() => {
     fetchVendor();
@@ -86,7 +89,12 @@ const VendorEdit = () => {
         setFormData(newFormData);
 
         // Set available states and cities based on saved data
-        if (vendor.country) {
+        if (vendor.country === 'India') {
+          loadStates();
+          if (vendor.state) {
+            loadCities(vendor.state);
+          }
+        } else if (vendor.country) {
           setAvailableStates(Object.keys(countryStateCity[vendor.country] || {}));
           if (vendor.state && countryStateCity[vendor.country]?.[vendor.state]) {
             setAvailableCities(countryStateCity[vendor.country][vendor.state]);
@@ -119,6 +127,37 @@ const VendorEdit = () => {
     }));
   };
 
+  // Load states from location service
+  const loadStates = async () => {
+    try {
+      setLoadingStates(true);
+      console.log('🔄 Loading states from location service...');
+      const states = await getAllStates();
+      setAvailableStates(states);
+      console.log(`✅ Loaded ${states.length} states`);
+    } catch (error) {
+      console.error('❌ Error loading states:', error);
+    } finally {
+      setLoadingStates(false);
+    }
+  };
+
+  // Load cities for selected state
+  const loadCities = async (stateName) => {
+    try {
+      setLoadingCities(true);
+      console.log(`🔄 Loading cities for state: ${stateName}`);
+      const cities = await getCitiesByStateName(stateName);
+      setAvailableCities(cities);
+      console.log(`✅ Loaded ${cities.length} cities for ${stateName}`);
+    } catch (error) {
+      console.error('❌ Error loading cities:', error);
+      setAvailableCities([]);
+    } finally {
+      setLoadingCities(false);
+    }
+  };
+
   const handleCountryChange = (e) => {
     const selectedCountry = e.target.value;
     setFormData(prev => ({
@@ -128,7 +167,13 @@ const VendorEdit = () => {
       city: ''
     }));
 
-    setAvailableStates(Object.keys(countryStateCity[selectedCountry] || {}));
+    if (selectedCountry === 'India') {
+      // Load states for India from location service
+      loadStates();
+    } else {
+      // For other countries, use fallback data
+      setAvailableStates(Object.keys(countryStateCity[selectedCountry] || {}));
+    }
     setAvailableCities([]);
   };
 
@@ -140,7 +185,13 @@ const VendorEdit = () => {
       city: ''
     }));
 
-    setAvailableCities(countryStateCity[formData.country]?.[selectedState] || []);
+    if (formData.country === 'India') {
+      // Load cities from location service for Indian states
+      loadCities(selectedState);
+    } else {
+      // Use fallback data for other countries
+      setAvailableCities(countryStateCity[formData.country]?.[selectedState] || []);
+    }
   };
 
   const addEmailField = () => {

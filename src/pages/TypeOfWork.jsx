@@ -149,30 +149,17 @@ const TypeOfWork = () => {
       const newStatus = currentStatus === 'Active' ? 'Inactive' : 'Active';
       console.log(`🔄 Toggling status for ${id} from ${currentStatus} to ${newStatus}`);
 
-      // Update in database
-      const { updateTypeOfWork } = await import('../services/typeOfWorkService');
-      await updateTypeOfWork(id, { isActive: newStatus === 'Active' });
+      // Update in database using the status update function
+      const { updateTypeOfWorkStatus } = await import('../services/typeOfWorkService');
+      const result = await updateTypeOfWorkStatus(id, newStatus);
+      console.log(`✅ Status updated successfully:`, result);
 
-      // Update local state
-      setTypeOfWorkData(prevData =>
-        prevData.map(item =>
-          item.id === id
-            ? { ...item, status: newStatus, isActive: newStatus === 'Active' }
-            : item
-        )
-      );
-
-      console.log(`✅ Status updated successfully for ${id}`);
+      // Reload the entire data to ensure consistency
+      await loadTypeOfWork();
+      alert(`✅ Status updated to ${newStatus} successfully!`);
     } catch (error) {
       console.error('❌ Error updating status:', error);
-      // For demo data, just update local state
-      setTypeOfWorkData(prevData =>
-        prevData.map(item =>
-          item.id === id
-            ? { ...item, status: currentStatus === 'Active' ? 'Inactive' : 'Active' }
-            : item
-        )
-      );
+      alert(`❌ Error updating status: ${error.message || 'Please try again.'}`);
     }
   };
 
@@ -235,23 +222,7 @@ const TypeOfWork = () => {
     }
   };
 
-  // Handle status toggle
-  const handleStatusToggle = async (id, currentStatus) => {
-    try {
-      const newStatus = currentStatus === 'Active' ? 'Inactive' : 'Active';
-      console.log(`🔄 Toggling status for ${id} from ${currentStatus} to ${newStatus}`);
 
-      const { updateTypeOfWorkStatus } = await import('../services/typeOfWorkService');
-      const result = await updateTypeOfWorkStatus(id, newStatus);
-      console.log(`✅ Status updated successfully:`, result);
-
-      await loadTypeOfWork();
-      alert(`✅ Status updated to ${newStatus} successfully!`);
-    } catch (error) {
-      console.error('❌ Error updating status:', error);
-      alert(`❌ Error updating status: ${error.message || 'Please try again.'}`);
-    }
-  };
 
   // Handle delete
   const handleDelete = async (id, name) => {

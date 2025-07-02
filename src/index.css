@@ -106,6 +106,91 @@ img::after {
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
 }
 
+/* Vendor View Specific Styles */
+.vendor-info-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.75rem 0;
+}
+
+.vendor-info-item .icon {
+  flex-shrink: 0;
+  margin-top: 0.125rem;
+}
+
+.vendor-info-item .content {
+  flex: 1;
+  min-width: 0;
+}
+
+.vendor-info-label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #6b7280;
+  margin-bottom: 0.25rem;
+}
+
+.vendor-info-value {
+  font-size: 1rem;
+  color: #111827;
+  word-break: break-word;
+}
+
+.document-upload-area {
+  border: 2px dashed #d1d5db;
+  border-radius: 0.5rem;
+  padding: 1.5rem;
+  text-align: center;
+  transition: all 0.2s;
+}
+
+.document-upload-area:hover {
+  border-color: #9ca3af;
+  background-color: #f9fafb;
+}
+
+.document-file-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem;
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.5rem;
+  transition: all 0.2s;
+}
+
+.document-file-item:hover {
+  background-color: #f1f5f9;
+  border-color: #cbd5e1;
+}
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.status-active {
+  background-color: #dcfce7;
+  color: #166534;
+}
+
+.status-pending {
+  background-color: #fef3c7;
+  color: #92400e;
+}
+
+.status-inactive {
+  background-color: #fee2e2;
+  color: #991b1b;
+}
+
 .input-field {
   width: 100%;
   padding: 0.5rem 0.75rem;

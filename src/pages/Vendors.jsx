@@ -7,57 +7,7 @@ import { getAllVendors, createVendor, deleteVendor, getVendorStats } from '../se
 import { getActiveTypeOfWork } from '../services/typeOfWorkService';
 import { getAllStates, getCitiesByStateName } from '../services/locationService';
 
-// Demo data fallback
-const demoVendors = [
-  {
-    id: 'demo-1',
-    company_name: 'TechCorp Solutions',
-    company_type: 'Pvt. Company',
-    onboarding_date: '2024-01-15',
-    onboardingDate: '2024-01-15',
-    emails: ['contact@techcorp.com'],
-    phones: ['+91-9876543210'],
-    address: '123 Tech Street, Bangalore',
-    country: 'India',
-    state: 'Karnataka',
-    city: 'Bangalore',
-    username: 'techcorp_admin',
-    gst_number: 'GST29ABCDE1234F1Z5',
-    description: 'Leading technology solutions provider',
-    services: ['Software Development', 'IT Consulting'],
-    website: 'https://techcorp.com',
-    type_of_work: 'Technology Services',
-    status: 'Active',
-    files: {},
-    rating: 4.8,
-    total_orders: 25,
-    totalOrders: 25
-  },
-  {
-    id: 'demo-2',
-    company_name: 'Global Supplies Inc',
-    company_type: 'MSME',
-    onboarding_date: '2024-02-10',
-    onboardingDate: '2024-02-10',
-    emails: ['info@globalsupplies.com'],
-    phones: ['+91-8765432109'],
-    address: '456 Supply Avenue, Mumbai',
-    country: 'India',
-    state: 'Maharashtra',
-    city: 'Mumbai',
-    username: 'global_supplies',
-    gst_number: 'GST27FGHIJ5678K2L6',
-    description: 'Reliable office supplies vendor',
-    services: ['Office Supplies', 'Furniture'],
-    website: 'https://globalsupplies.com',
-    type_of_work: 'Office Supplies',
-    status: 'Active',
-    files: {},
-    rating: 4.5,
-    total_orders: 18,
-    totalOrders: 18
-  }
-];
+// Removed demo data - using only database data
 
 const Vendors = () => {
   const navigate = useNavigate();
@@ -109,138 +59,19 @@ const Vendors = () => {
 
       console.log('✅ Vendors loaded:', dbVendors.length, 'records');
 
-      // If database is empty, add demo data and save to database
-      if (dbVendors && dbVendors.length === 0) {
-        console.log('📝 Database is empty, adding demo vendors...');
-        setVendorsList(demoVendors);
-        // Try to save demo data to database in background
-        try {
-          await addDemoVendorsToDatabase();
-        } catch (saveError) {
-          console.log('⚠️ Could not save demo vendors to database:', saveError.message);
-        }
-      } else {
-        setVendorsList(dbVendors);
-      }
+      setVendorsList(dbVendors || []);
       setError(null);
     } catch (err) {
       console.error('❌ Database connection failed:', err);
       console.error('❌ Error details:', err.message);
       setError('Failed to load vendors from database: ' + err.message);
-      // Fallback to demo data
-      console.log('🔄 Using demo vendors as fallback and attempting to save to database');
-      setVendorsList(demoVendors);
-      // Try to save demo data to database in background
-      try {
-        await addDemoVendorsToDatabase();
-      } catch (saveError) {
-        console.log('⚠️ Could not save demo vendors to database:', saveError.message);
-      }
+      setVendorsList([]);
     } finally {
       setLoading(false);
     }
   };
 
-  // Add demo vendors to database
-  const addDemoVendorsToDatabase = async () => {
-    try {
-      console.log('💾 Saving demo vendors to database...');
 
-      // First ensure the vendors table exists
-      try {
-        const { sql } = await import('../config/database');
-        await sql`
-          CREATE TABLE IF NOT EXISTS vendors (
-            id TEXT PRIMARY KEY DEFAULT ('vendor-' || lower(hex(randomblob(8)))),
-            name TEXT NOT NULL,
-            company TEXT NOT NULL,
-            "companyName" TEXT,
-            "companyType" TEXT,
-            "onboardingDate" DATE,
-            email TEXT,
-            phone TEXT,
-            address TEXT,
-            country TEXT,
-            state TEXT,
-            city TEXT,
-            username TEXT,
-            "gstNumber" TEXT,
-            specialization TEXT,
-            "typeOfWork" TEXT,
-            "isActive" BOOLEAN DEFAULT TRUE,
-            rating DECIMAL(3,2) DEFAULT 0.00,
-            "totalOrders" INTEGER DEFAULT 0,
-            "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            "updatedAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            "createdById" TEXT
-          )
-        `;
-        console.log('✅ Vendors table ready');
-      } catch (tableError) {
-        console.log('⚠️ Table creation issue:', tableError.message);
-      }
-
-      // Try using the vendor service first
-      try {
-        const { createVendor } = await import('../services/vendorService');
-
-        for (const vendor of demoVendors) {
-          try {
-            await createVendor({
-              companyName: vendor.company_name,
-              companyType: vendor.company_type,
-              onboardingDate: vendor.onboarding_date,
-              emails: vendor.emails,
-              phones: vendor.phones,
-              address: vendor.address,
-              country: vendor.country,
-              state: vendor.state,
-              city: vendor.city,
-              username: vendor.username,
-              gstNumber: vendor.gst_number,
-              description: vendor.description,
-              services: vendor.services,
-              website: vendor.website,
-              typeOfWork: vendor.type_of_work,
-              status: vendor.status
-            });
-            console.log(`✅ Saved vendor to database: ${vendor.company_name}`);
-          } catch (saveError) {
-            console.log(`⚠️ Could not save vendor ${vendor.company_name}:`, saveError.message);
-          }
-        }
-      } catch (serviceError) {
-        console.log('⚠️ Vendor service failed, trying direct database insertion...');
-
-        // Fallback: Direct database insertion
-        const { sql } = await import('../config/database');
-        for (const vendor of demoVendors) {
-          try {
-            await sql`
-              INSERT INTO vendors (
-                name, company, "companyName", "companyType", "onboardingDate",
-                email, phone, address, country, state, city, username, "gstNumber",
-                specialization, "typeOfWork", "isActive", rating, "totalOrders"
-              ) VALUES (
-                ${vendor.company_name}, ${vendor.company_name}, ${vendor.company_name},
-                ${vendor.company_type}, ${vendor.onboarding_date}, ${vendor.emails[0] || ''},
-                ${vendor.phones[0] || ''}, ${vendor.address}, ${vendor.country},
-                ${vendor.state}, ${vendor.city}, ${vendor.username}, ${vendor.gst_number},
-                ${vendor.description}, ${vendor.type_of_work}, ${vendor.status === 'Active'},
-                ${vendor.rating || 0}, ${vendor.total_orders || 0}
-              )
-            `;
-            console.log(`✅ Direct insert successful: ${vendor.company_name}`);
-          } catch (directError) {
-            console.log(`⚠️ Direct insert failed for ${vendor.company_name}:`, directError.message);
-          }
-        }
-      }
-      console.log('✅ Demo vendors saved to database successfully!');
-    } catch (error) {
-      console.log('❌ Error saving demo vendors:', error.message);
-    }
-  };
 
   // Load type of work options
   const loadTypeOfWork = async () => {
