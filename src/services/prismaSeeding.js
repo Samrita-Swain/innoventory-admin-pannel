@@ -1,6 +1,4 @@
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { sql } from '../config/database.js';
 
 // Use existing user IDs from the database
 const ADMIN_USER_ID = 'cmc8xw4jy0000ug4w41dehbd2';
@@ -76,17 +74,30 @@ export const seedClients = async (count = 5) => {
     console.log(`🔄 Seeding ${count} clients...`);
     const clients = generateClients(count);
     let seeded = 0;
-    
+
     for (const client of clients) {
       try {
-        await prisma.client.create({ data: client });
+        await sql`
+          INSERT INTO clients (
+            "companyName", "companyType", "onboardingDate", emails, phones,
+            address, country, state, city, "isDpiitRegistered", "dpiitNumber",
+            "dpiitCertificate", "isActive", "totalProjects", "createdAt", "updatedAt"
+          ) VALUES (
+            ${client.companyName}, ${client.companyType}, ${client.onboardingDate},
+            ${JSON.stringify(client.emails)}, ${JSON.stringify(client.phones)},
+            ${client.address}, ${client.country}, ${client.state}, ${client.city},
+            ${client.isDpiitRegistered}, ${client.dpiitNumber || ''},
+            ${client.dpiitCertificate || ''}, ${client.isActive}, ${client.totalProjects || 0},
+            ${new Date().toISOString()}, ${new Date().toISOString()}
+          )
+        `;
         console.log(`✅ Seeded client: ${client.companyName}`);
         seeded++;
       } catch (error) {
         console.log(`⚠️ Client ${client.companyName} error:`, error.message);
       }
     }
-    
+
     console.log(`✅ Clients seeding completed: ${seeded}/${count} successful`);
     return { success: true, seeded, total: count };
   } catch (error) {
@@ -100,21 +111,34 @@ export const seedSubAdmins = async (count = 3) => {
     console.log(`🔄 Seeding ${count} sub-admins...`);
     const subAdmins = generateSubAdmins(count);
     let seeded = 0;
-    
+
     for (const subAdmin of subAdmins) {
       try {
-        await prisma.subAdmin.upsert({
-          where: { email: subAdmin.email },
-          update: {},
-          create: subAdmin
-        });
-        console.log(`✅ Seeded sub-admin: ${subAdmin.name}`);
-        seeded++;
+        // Check if sub-admin already exists
+        const existing = await sql`
+          SELECT id FROM "subAdmins" WHERE email = ${subAdmin.email}
+        `;
+
+        if (existing.length === 0) {
+          await sql`
+            INSERT INTO "subAdmins" (
+              name, email, phone, role, permissions, "isActive", "createdAt", "updatedAt"
+            ) VALUES (
+              ${subAdmin.name}, ${subAdmin.email}, ${subAdmin.phone},
+              ${subAdmin.role}, ${JSON.stringify(subAdmin.permissions)}, ${subAdmin.isActive},
+              ${new Date().toISOString()}, ${new Date().toISOString()}
+            )
+          `;
+          console.log(`✅ Seeded sub-admin: ${subAdmin.name}`);
+          seeded++;
+        } else {
+          console.log(`⚠️ Sub-admin ${subAdmin.name} already exists`);
+        }
       } catch (error) {
         console.log(`⚠️ Sub-admin ${subAdmin.name} error:`, error.message);
       }
     }
-    
+
     console.log(`✅ Sub-admins seeding completed: ${seeded}/${count} successful`);
     return { success: true, seeded, total: count };
   } catch (error) {
@@ -128,15 +152,39 @@ export const seedSubAdmins = async (count = 3) => {
  */
 export const getDataCounts = async () => {
   try {
-    const counts = {
-      users: await prisma.user.count(),
-      customers: await prisma.customer.count(),
-      vendors: await prisma.vendor.count(),
-      clients: await prisma.client.count(),
-      subAdmins: await prisma.subAdmin.count(),
-      orders: await prisma.order.count()
-    };
-    
+    const counts = {};
+
+    // Get counts from each table
+    try {
+      const usersResult = await sql`SELECT COUNT(*) as count FROM users`;
+      counts.users = parseInt(usersResult[0].count);
+    } catch (e) { counts.users = 0; }
+
+    try {
+      const customersResult = await sql`SELECT COUNT(*) as count FROM customers`;
+      counts.customers = parseInt(customersResult[0].count);
+    } catch (e) { counts.customers = 0; }
+
+    try {
+      const vendorsResult = await sql`SELECT COUNT(*) as count FROM vendors`;
+      counts.vendors = parseInt(vendorsResult[0].count);
+    } catch (e) { counts.vendors = 0; }
+
+    try {
+      const clientsResult = await sql`SELECT COUNT(*) as count FROM clients`;
+      counts.clients = parseInt(clientsResult[0].count);
+    } catch (e) { counts.clients = 0; }
+
+    try {
+      const subAdminsResult = await sql`SELECT COUNT(*) as count FROM "subAdmins"`;
+      counts.subAdmins = parseInt(subAdminsResult[0].count);
+    } catch (e) { counts.subAdmins = 0; }
+
+    try {
+      const ordersResult = await sql`SELECT COUNT(*) as count FROM orders`;
+      counts.orders = parseInt(ordersResult[0].count);
+    } catch (e) { counts.orders = 0; }
+
     counts.total = Object.values(counts).reduce((sum, count) => sum + count, 0);
     return { success: true, data: counts };
   } catch (error) {
@@ -261,33 +309,28 @@ export const smartSeed = async () => {
 export const clearRecentData = async () => {
   try {
     console.log('🧹 Clearing recent seeded data...');
-    
+
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    
-    const deletedClients = await prisma.client.deleteMany({
-      where: {
-        createdAt: {
-          gte: today
-        }
-      }
-    });
-    
-    const deletedSubAdmins = await prisma.subAdmin.deleteMany({
-      where: {
-        createdAt: {
-          gte: today
-        }
-      }
-    });
-    
-    console.log(`✅ Cleared ${deletedClients.count} clients and ${deletedSubAdmins.count} sub-admins`);
-    
+    const todayISO = today.toISOString();
+
+    const deletedClientsResult = await sql`
+      DELETE FROM clients
+      WHERE "createdAt" >= ${todayISO}
+    `;
+
+    const deletedSubAdminsResult = await sql`
+      DELETE FROM "subAdmins"
+      WHERE "createdAt" >= ${todayISO}
+    `;
+
+    console.log(`✅ Cleared recent data from today`);
+
     return {
       success: true,
       deleted: {
-        clients: deletedClients.count,
-        subAdmins: deletedSubAdmins.count
+        clients: 'cleared',
+        subAdmins: 'cleared'
       }
     };
   } catch (error) {
@@ -295,6 +338,3 @@ export const clearRecentData = async () => {
     return { success: false, error: error.message };
   }
 };
-
-// Export Prisma client for direct use if needed
-export { prisma };

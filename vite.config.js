@@ -14,5 +14,15 @@ export default defineConfig(({ mode }) => {
     },
     // Expose env variables that start with VITE_
     envPrefix: 'VITE_',
+    // Exclude Prisma Client from browser bundle
+    optimizeDeps: {
+      exclude: ['@prisma/client']
+    },
+    // Configure external dependencies for server-side only
+    build: {
+      rollupOptions: {
+        external: ['@prisma/client']
+      }
+    }
   }
 })
