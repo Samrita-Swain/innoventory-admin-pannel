@@ -172,22 +172,8 @@ export const createTypeOfWork = async (typeOfWorkData) => {
       throw new Error('Name and description are required fields');
     }
 
-    // First ensure the table exists with correct structure
-    try {
-      await sql`
-        CREATE TABLE IF NOT EXISTS type_of_work (
-          id TEXT PRIMARY KEY DEFAULT ('work-' || lower(hex(randomblob(8)))),
-          name TEXT NOT NULL,
-          description TEXT NOT NULL,
-          "isActive" BOOLEAN DEFAULT TRUE,
-          "createdAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-          "updatedAt" TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-          "createdById" TEXT DEFAULT 'admin'
-        )
-      `;
-    } catch (tableError) {
-      console.log('⚠️ Table creation issue (may already exist):', tableError.message);
-    }
+    // Table should already exist from database initialization
+    console.log('📋 Using existing type_of_work table schema');
 
     // Insert the new type of work
     const typeOfWork = await sql`
@@ -196,15 +182,13 @@ export const createTypeOfWork = async (typeOfWorkData) => {
         description,
         "isActive",
         "createdAt",
-        "updatedAt",
-        "createdById"
+        "updatedAt"
       ) VALUES (
-        ${name},
-        ${description},
+        ${name.trim()},
+        ${description.trim()},
         ${true},
         CURRENT_TIMESTAMP,
-        CURRENT_TIMESTAMP,
-        ${'admin'}
+        CURRENT_TIMESTAMP
       )
       RETURNING *
     `;

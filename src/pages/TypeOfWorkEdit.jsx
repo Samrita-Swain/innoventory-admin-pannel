@@ -40,26 +40,46 @@ const TypeOfWorkEdit = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    if (!typeOfWork.name.trim() || !typeOfWork.description.trim()) {
-      alert('Please fill in all required fields');
+
+    // Validation
+    if (!typeOfWork.name || typeOfWork.name.trim() === '') {
+      alert('❌ Work Type Name is required');
+      return;
+    }
+
+    if (!typeOfWork.description || typeOfWork.description.trim() === '') {
+      alert('❌ Description is required');
+      return;
+    }
+
+    if (typeOfWork.name.trim().length < 3) {
+      alert('❌ Work Type Name must be at least 3 characters long');
+      return;
+    }
+
+    if (typeOfWork.description.trim().length < 10) {
+      alert('❌ Description must be at least 10 characters long');
       return;
     }
 
     try {
       setSaving(true);
+      console.log('✏️ Updating type of work:', typeOfWork);
+
       const { updateTypeOfWork } = await import('../services/typeOfWorkService');
-      
-      await updateTypeOfWork(id, {
+
+      const result = await updateTypeOfWork(id, {
         name: typeOfWork.name.trim(),
-        description: typeOfWork.description.trim()
+        description: typeOfWork.description.trim(),
+        isActive: typeOfWork.isActive
       });
 
-      alert('Type of work updated successfully!');
+      console.log('✅ Type of work updated successfully:', result);
+      alert('✅ Type of work updated successfully!');
       navigate('/type-of-work');
     } catch (error) {
-      console.error('Error updating type of work:', error);
-      alert('Error updating type of work. Please try again.');
+      console.error('❌ Error updating type of work:', error);
+      alert(`❌ Error updating type of work: ${error.message || 'Please try again.'}`);
     } finally {
       setSaving(false);
     }
@@ -129,21 +149,40 @@ const TypeOfWorkEdit = () => {
               />
             </div>
 
-            {/* Status Display */}
+            {/* Status Toggle */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Status
               </label>
-              <div className="flex items-center">
+              <div className="flex items-center space-x-4">
+                <label className="flex items-center">
+                  <input
+                    type="radio"
+                    name="status"
+                    checked={typeOfWork.isActive === true}
+                    onChange={() => handleInputChange('isActive', true)}
+                    className="mr-2 text-blue-600 focus:ring-blue-500"
+                  />
+                  <span className="text-sm text-gray-700">Active</span>
+                </label>
+                <label className="flex items-center">
+                  <input
+                    type="radio"
+                    name="status"
+                    checked={typeOfWork.isActive === false}
+                    onChange={() => handleInputChange('isActive', false)}
+                    className="mr-2 text-blue-600 focus:ring-blue-500"
+                  />
+                  <span className="text-sm text-gray-700">Inactive</span>
+                </label>
+              </div>
+              <div className="mt-2">
                 <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                  typeOfWork.isActive 
-                    ? 'bg-green-100 text-green-800' 
+                  typeOfWork.isActive
+                    ? 'bg-green-100 text-green-800'
                     : 'bg-red-100 text-red-800'
                 }`}>
                   {typeOfWork.isActive ? 'Active' : 'Inactive'}
-                </span>
-                <span className="ml-3 text-sm text-gray-500">
-                  (Status can be changed from the main page)
                 </span>
               </div>
             </div>

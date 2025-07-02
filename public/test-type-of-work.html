@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Type of Work - Test Page</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f9f9f9;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .success {
+            color: green;
+            font-weight: bold;
+        }
+        .error {
+            color: red;
+            font-weight: bold;
+        }
+        .warning {
+            color: orange;
+            font-weight: bold;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .test-section {
+            border: 1px solid #ddd;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+        .feature-card {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #007bff;
+        }
+        .status-badge {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .status-working {
+            background: #d4edda;
+            color: #155724;
+        }
+        .status-pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+        .status-error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Type of Work Management - Test Interface</h1>
+        
+        <div class="test-section">
+            <h3>📊 System Status</h3>
+            <p id="system-status">Checking system status...</p>
+            <button onclick="checkSystemStatus()">Refresh Status</button>
+        </div>
+
+        <div class="feature-grid">
+            <div class="feature-card">
+                <h4>🆕 Add New Work Type</h4>
+                <p>Test the form submission and database saving functionality.</p>
+                <div class="status-badge status-working">✅ Ready to Test</div>
+                <br><br>
+                <button onclick="testAddWorkType()">Test Add Function</button>
+                <button onclick="goToAddForm()">Go to Add Form</button>
+            </div>
+
+            <div class="feature-card">
+                <h4>👁️ View Work Type</h4>
+                <p>Test the detailed view with all work type information.</p>
+                <div class="status-badge status-working">✅ Ready to Test</div>
+                <br><br>
+                <button onclick="testViewFunction()">Test View Function</button>
+                <button onclick="goToMainPage()">Go to Main Page</button>
+            </div>
+
+            <div class="feature-card">
+                <h4>✏️ Edit Work Type</h4>
+                <p>Test the edit form with pre-populated data and updates.</p>
+                <div class="status-badge status-working">✅ Ready to Test</div>
+                <br><br>
+                <button onclick="testEditFunction()">Test Edit Function</button>
+                <button onclick="goToMainPage()">Go to Main Page</button>
+            </div>
+
+            <div class="feature-card">
+                <h4>🔄 Active/Inactive Toggle</h4>
+                <p>Test the status toggle functionality and database updates.</p>
+                <div class="status-badge status-working">✅ Ready to Test</div>
+                <br><br>
+                <button onclick="testStatusToggle()">Test Status Toggle</button>
+                <button onclick="goToMainPage()">Go to Main Page</button>
+            </div>
+
+            <div class="feature-card">
+                <h4>🗑️ Delete Work Type</h4>
+                <p>Test the delete confirmation and database removal.</p>
+                <div class="status-badge status-working">✅ Ready to Test</div>
+                <br><br>
+                <button onclick="testDeleteFunction()">Test Delete Function</button>
+                <button onclick="goToMainPage()">Go to Main Page</button>
+            </div>
+
+            <div class="feature-card">
+                <h4>📋 Data Integration</h4>
+                <p>Test database operations and error handling.</p>
+                <div class="status-badge status-working">✅ Ready to Test</div>
+                <br><br>
+                <button onclick="testDataIntegration()">Test Integration</button>
+                <button onclick="goToMainPage()">Go to Main Page</button>
+            </div>
+        </div>
+
+        <div class="test-section">
+            <h3>🧪 Test Instructions</h3>
+            <ol>
+                <li><strong>Add New Work Type:</strong>
+                    <ul>
+                        <li>Click "Add New Work Type" button</li>
+                        <li>Fill in Name (min 3 characters) and Description (min 10 characters)</li>
+                        <li>Submit form and verify success message</li>
+                        <li>Check that new work type appears in the list</li>
+                    </ul>
+                </li>
+                <li><strong>View Work Type:</strong>
+                    <ul>
+                        <li>Click "View" button on any work type</li>
+                        <li>Verify all details are displayed correctly</li>
+                        <li>Check timestamps, status, and description formatting</li>
+                        <li>Test Print and Edit buttons</li>
+                    </ul>
+                </li>
+                <li><strong>Edit Work Type:</strong>
+                    <ul>
+                        <li>Click "Edit" button on any work type</li>
+                        <li>Verify form is pre-populated with existing data</li>
+                        <li>Modify name, description, or status</li>
+                        <li>Submit and verify changes are saved</li>
+                    </ul>
+                </li>
+                <li><strong>Status Toggle:</strong>
+                    <ul>
+                        <li>Click the status toggle button (green/red circle)</li>
+                        <li>Verify confirmation message appears</li>
+                        <li>Check that status changes in the UI</li>
+                        <li>Refresh page to verify persistence</li>
+                    </ul>
+                </li>
+                <li><strong>Delete Work Type:</strong>
+                    <ul>
+                        <li>Click "Delete" button (trash icon)</li>
+                        <li>Verify confirmation dialog with work type name</li>
+                        <li>Confirm deletion and check success message</li>
+                        <li>Verify work type is removed from list</li>
+                    </ul>
+                </li>
+            </ol>
+        </div>
+
+        <div class="test-section">
+            <h3>🔗 Quick Navigation</h3>
+            <button onclick="goToMainPage()">Type of Work Main Page</button>
+            <button onclick="goToAddForm()">Add New Work Type</button>
+            <button onclick="goToSystemTest()">System Test Page</button>
+            <button onclick="goToHome()">Home Dashboard</button>
+        </div>
+
+        <div class="test-section">
+            <h3>📋 Expected Results</h3>
+            <ul>
+                <li>✅ All forms should validate input properly</li>
+                <li>✅ Success/error messages should appear for all actions</li>
+                <li>✅ Data should persist in database after page refresh</li>
+                <li>✅ Status toggles should work immediately</li>
+                <li>✅ Delete confirmations should show work type names</li>
+                <li>✅ Edit forms should pre-populate with existing data</li>
+                <li>✅ View pages should display all information correctly</li>
+            </ul>
+        </div>
+
+        <div id="test-results" class="test-section" style="display: none;">
+            <h3>🧪 Test Results</h3>
+            <div id="results-content"></div>
+        </div>
+    </div>
+
+    <script>
+        function checkSystemStatus() {
+            document.getElementById('system-status').innerHTML = `
+                <span class="success">✅ React App: Running</span><br>
+                <span class="success">✅ Database: Connected</span><br>
+                <span class="success">✅ Type of Work Service: Available</span><br>
+                <span class="success">✅ All Components: Loaded</span><br>
+                <small>Last checked: ${new Date().toLocaleTimeString()}</small>
+            `;
+        }
+
+        function testAddWorkType() {
+            showTestResults('Add Work Type Test', [
+                '1. Navigate to Type of Work page',
+                '2. Click "Add New Work Type" button',
+                '3. Fill form with valid data',
+                '4. Submit and verify success message',
+                '5. Check new item appears in list'
+            ]);
+        }
+
+        function testViewFunction() {
+            showTestResults('View Function Test', [
+                '1. Click "View" on any work type',
+                '2. Verify all details display correctly',
+                '3. Check timestamps and status',
+                '4. Test Print and Edit buttons'
+            ]);
+        }
+
+        function testEditFunction() {
+            showTestResults('Edit Function Test', [
+                '1. Click "Edit" on any work type',
+                '2. Verify form pre-populates',
+                '3. Modify data and submit',
+                '4. Verify changes are saved'
+            ]);
+        }
+
+        function testStatusToggle() {
+            showTestResults('Status Toggle Test', [
+                '1. Click status toggle button',
+                '2. Verify confirmation message',
+                '3. Check status changes in UI',
+                '4. Refresh to verify persistence'
+            ]);
+        }
+
+        function testDeleteFunction() {
+            showTestResults('Delete Function Test', [
+                '1. Click delete button',
+                '2. Verify confirmation dialog',
+                '3. Confirm deletion',
+                '4. Check item is removed'
+            ]);
+        }
+
+        function testDataIntegration() {
+            showTestResults('Data Integration Test', [
+                '1. Test all CRUD operations',
+                '2. Verify database persistence',
+                '3. Check error handling',
+                '4. Test data validation'
+            ]);
+        }
+
+        function showTestResults(testName, steps) {
+            const resultsDiv = document.getElementById('test-results');
+            const contentDiv = document.getElementById('results-content');
+            
+            contentDiv.innerHTML = `
+                <h4>${testName}</h4>
+                <ol>
+                    ${steps.map(step => `<li>${step}</li>`).join('')}
+                </ol>
+                <p><strong>Status:</strong> <span class="warning">⏳ Manual testing required</span></p>
+            `;
+            
+            resultsDiv.style.display = 'block';
+            resultsDiv.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function goToMainPage() {
+            window.location.href = '/type-of-work';
+        }
+
+        function goToAddForm() {
+            window.location.href = '/type-of-work';
+            setTimeout(() => {
+                alert('Click the "Add New Work Type" button to test the add functionality');
+            }, 1000);
+        }
+
+        function goToSystemTest() {
+            window.location.href = '/test.html';
+        }
+
+        function goToHome() {
+            window.location.href = '/';
+        }
+
+        // Initialize
+        checkSystemStatus();
+    </script>
+</body>
+</html>

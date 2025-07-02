@@ -179,19 +179,47 @@ const TypeOfWork = () => {
   // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // Validation
+    if (!formData.name || formData.name.trim() === '') {
+      alert('❌ Work Type Name is required');
+      return;
+    }
+
+    if (!formData.description || formData.description.trim() === '') {
+      alert('❌ Description is required');
+      return;
+    }
+
+    if (formData.name.trim().length < 3) {
+      alert('❌ Work Type Name must be at least 3 characters long');
+      return;
+    }
+
+    if (formData.description.trim().length < 10) {
+      alert('❌ Description must be at least 10 characters long');
+      return;
+    }
+
     try {
       setLoading(true);
+      console.log('🚀 Submitting type of work form...');
+      console.log('📋 Form data:', formData);
 
       if (editingId) {
         // Update existing type of work
+        console.log(`✏️ Updating type of work with ID: ${editingId}`);
         const { updateTypeOfWork } = await import('../services/typeOfWorkService');
-        await updateTypeOfWork(editingId, formData);
-        console.log('✅ Type of work updated successfully');
+        const result = await updateTypeOfWork(editingId, formData);
+        console.log('✅ Type of work updated successfully:', result);
+        alert('✅ Type of work updated successfully!');
       } else {
         // Create new type of work
+        console.log('🆕 Creating new type of work');
         const { createTypeOfWork } = await import('../services/typeOfWorkService');
-        await createTypeOfWork(formData);
-        console.log('✅ Type of work created successfully');
+        const result = await createTypeOfWork(formData);
+        console.log('✅ Type of work created successfully:', result);
+        alert('✅ Type of work created successfully!');
       }
 
       // Reset form and reload data
@@ -201,7 +229,7 @@ const TypeOfWork = () => {
       await loadTypeOfWork();
     } catch (error) {
       console.error('❌ Error saving type of work:', error);
-      alert('Error saving type of work: ' + error.message);
+      alert(`❌ Error saving type of work: ${error.message || 'Please try again.'}`);
     } finally {
       setLoading(false);
     }
@@ -211,27 +239,36 @@ const TypeOfWork = () => {
   const handleStatusToggle = async (id, currentStatus) => {
     try {
       const newStatus = currentStatus === 'Active' ? 'Inactive' : 'Active';
+      console.log(`🔄 Toggling status for ${id} from ${currentStatus} to ${newStatus}`);
+
       const { updateTypeOfWorkStatus } = await import('../services/typeOfWorkService');
-      await updateTypeOfWorkStatus(id, newStatus);
-      console.log(`✅ Status updated to ${newStatus}`);
+      const result = await updateTypeOfWorkStatus(id, newStatus);
+      console.log(`✅ Status updated successfully:`, result);
+
       await loadTypeOfWork();
+      alert(`✅ Status updated to ${newStatus} successfully!`);
     } catch (error) {
       console.error('❌ Error updating status:', error);
-      alert('Error updating status: ' + error.message);
+      alert(`❌ Error updating status: ${error.message || 'Please try again.'}`);
     }
   };
 
   // Handle delete
-  const handleDelete = async (id) => {
-    if (confirm('Are you sure you want to delete this type of work?')) {
+  const handleDelete = async (id, name) => {
+    const confirmMessage = `Are you sure you want to delete "${name}"?\n\nThis action cannot be undone and will permanently remove this type of work from the system.`;
+
+    if (confirm(confirmMessage)) {
       try {
+        console.log(`🗑️ Deleting type of work: ${name} (ID: ${id})`);
         const { deleteTypeOfWork } = await import('../services/typeOfWorkService');
         await deleteTypeOfWork(id);
         console.log('✅ Type of work deleted successfully');
+
         await loadTypeOfWork();
+        alert(`✅ "${name}" has been deleted successfully!`);
       } catch (error) {
         console.error('❌ Error deleting type of work:', error);
-        alert('Error deleting type of work: ' + error.message);
+        alert(`❌ Error deleting type of work: ${error.message || 'Please try again.'}`);
       }
     }
   };
@@ -329,7 +366,7 @@ const TypeOfWork = () => {
             )}
           </button>
           <button
-            onClick={() => handleDelete(row.id)}
+            onClick={() => handleDelete(row.id, row.name)}
             className="text-red-600 hover:text-red-800"
             title="Delete"
           >
