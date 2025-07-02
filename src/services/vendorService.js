@@ -33,6 +33,7 @@ export const getAllVendors = async () => {
     `;
 
     // Transform data to match UI expectations and format dates
+<<<<<<< HEAD
     return vendors.map(vendor => {
       // Parse JSON fields safely
       let emails = [];
@@ -95,6 +96,20 @@ export const getAllVendors = async () => {
         updatedAt: vendor.updated_at ? new Date(vendor.updated_at).toISOString().split('T')[0] : ''
       };
     });
+=======
+    return vendors.map(vendor => ({
+      ...vendor,
+      // Ensure emails and phones are arrays
+      emails: Array.isArray(vendor.emails) ? vendor.emails : (vendor.emails ? [vendor.emails] : []),
+      phones: Array.isArray(vendor.phones) ? vendor.phones : (vendor.phones ? [vendor.phones] : []),
+      // Add camelCase versions for compatibility
+      totalOrders: vendor.total_orders || 0,
+      onboardingDate: vendor.onboarding_date ? new Date(vendor.onboarding_date).toISOString().split('T')[0] : '',
+      // Format dates to strings to prevent React errors
+      createdAt: vendor.created_at ? new Date(vendor.created_at).toISOString().split('T')[0] : '',
+      updatedAt: vendor.updated_at ? new Date(vendor.updated_at).toISOString().split('T')[0] : ''
+    }));
+>>>>>>> c1baa51e48058b34501fe27ef2ff96e7d29299b0
   } catch (error) {
     console.error('Error fetching vendors:', error);
     throw error;
@@ -438,6 +453,7 @@ export const createVendor = async (vendorData) => {
         rating,
         total_orders
       ) VALUES (
+<<<<<<< HEAD
         ${companyName || ''},
         ${companyType || null},
         ${onboardingDate ? new Date(onboardingDate) : null},
@@ -456,6 +472,26 @@ export const createVendor = async (vendorData) => {
         ${status || 'Pending'},
         ${JSON.stringify(processedFiles)},
         ${0},
+=======
+        ${companyName},
+        ${companyType},
+        ${onboardingDate},
+        ${JSON.stringify(emails)},
+        ${JSON.stringify(phones)},
+        ${address},
+        ${country},
+        ${state},
+        ${city},
+        ${username},
+        ${gstNumber},
+        ${description},
+        ${JSON.stringify(services || [])},
+        ${website || ''},
+        ${typeOfWork || ''},
+        ${status || 'Pending'},
+        ${JSON.stringify(files || {})},
+        ${0.0},
+>>>>>>> c1baa51e48058b34501fe27ef2ff96e7d29299b0
         ${0}
       )
       RETURNING *
@@ -552,23 +588,26 @@ export const updateVendor = async (id, vendorData) => {
     // Perform the update using a simple approach
     const vendor = await sql`
       UPDATE vendors SET
-        name = ${updateObj.name || sql`name`},
-        company = ${updateObj.company || sql`company`},
-        "companyName" = ${updateObj.companyName || sql`"companyName"`},
-        "companyType" = ${updateObj.companyType || sql`"companyType"`},
-        "onboardingDate" = ${updateObj.onboardingDate || sql`"onboardingDate"`},
-        email = ${updateObj.email || sql`email`},
-        phone = ${updateObj.phone || sql`phone`},
+        company_name = ${updateObj.companyName || sql`company_name`},
+        company_type = ${updateObj.companyType || sql`company_type`},
+        onboarding_date = ${updateObj.onboardingDate || sql`onboarding_date`},
+        emails = ${updateObj.emails ? JSON.stringify(updateObj.emails) : sql`emails`},
+        phones = ${updateObj.phones ? JSON.stringify(updateObj.phones) : sql`phones`},
         address = ${updateObj.address || sql`address`},
         country = ${updateObj.country || sql`country`},
         state = ${updateObj.state || sql`state`},
         city = ${updateObj.city || sql`city`},
         username = ${updateObj.username || sql`username`},
-        "gstNumber" = ${updateObj.gstNumber || sql`"gstNumber"`},
+        gst_number = ${updateObj.gstNumber || sql`gst_number`},
+        description = ${updateObj.description || sql`description`},
+        services = ${updateObj.services ? JSON.stringify(updateObj.services) : sql`services`},
+        website = ${updateObj.website || sql`website`},
+        type_of_work = ${updateObj.typeOfWork || sql`type_of_work`},
+        status = ${updateObj.status || sql`status`},
+        files = ${updateObj.files ? JSON.stringify(updateObj.files) : sql`files`},
         rating = ${updateObj.rating || sql`rating`},
-        specialization = ${updateObj.specialization || sql`specialization`},
-        "isActive" = ${updateObj.isActive !== undefined ? updateObj.isActive : sql`"isActive"`},
-        "updatedAt" = NOW()
+        total_orders = ${updateObj.totalOrders || sql`total_orders`},
+        updated_at = NOW()
       WHERE id = ${id}
       RETURNING *
     `;

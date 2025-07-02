@@ -14,6 +14,7 @@ const demoVendors = [
     company_name: 'TechCorp Solutions',
     company_type: 'Pvt. Company',
     onboarding_date: '2024-01-15',
+    onboardingDate: '2024-01-15',
     emails: ['contact@techcorp.com'],
     phones: ['+91-9876543210'],
     address: '123 Tech Street, Bangalore',
@@ -29,13 +30,15 @@ const demoVendors = [
     status: 'Active',
     files: {},
     rating: 4.8,
-    total_orders: 25
+    total_orders: 25,
+    totalOrders: 25
   },
   {
     id: 'demo-2',
     company_name: 'Global Supplies Inc',
     company_type: 'MSME',
     onboarding_date: '2024-02-10',
+    onboardingDate: '2024-02-10',
     emails: ['info@globalsupplies.com'],
     phones: ['+91-8765432109'],
     address: '456 Supply Avenue, Mumbai',
@@ -51,7 +54,8 @@ const demoVendors = [
     status: 'Active',
     files: {},
     rating: 4.5,
-    total_orders: 18
+    total_orders: 18,
+    totalOrders: 18
   }
 ];
 
