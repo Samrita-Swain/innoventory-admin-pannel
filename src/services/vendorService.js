@@ -33,7 +33,6 @@ export const getAllVendors = async () => {
     `;
 
     // Transform data to match UI expectations and format dates
-<<<<<<< HEAD
     return vendors.map(vendor => {
       // Parse JSON fields safely
       let emails = [];
@@ -96,20 +95,6 @@ export const getAllVendors = async () => {
         updatedAt: vendor.updated_at ? new Date(vendor.updated_at).toISOString().split('T')[0] : ''
       };
     });
-=======
-    return vendors.map(vendor => ({
-      ...vendor,
-      // Ensure emails and phones are arrays
-      emails: Array.isArray(vendor.emails) ? vendor.emails : (vendor.emails ? [vendor.emails] : []),
-      phones: Array.isArray(vendor.phones) ? vendor.phones : (vendor.phones ? [vendor.phones] : []),
-      // Add camelCase versions for compatibility
-      totalOrders: vendor.total_orders || 0,
-      onboardingDate: vendor.onboarding_date ? new Date(vendor.onboarding_date).toISOString().split('T')[0] : '',
-      // Format dates to strings to prevent React errors
-      createdAt: vendor.created_at ? new Date(vendor.created_at).toISOString().split('T')[0] : '',
-      updatedAt: vendor.updated_at ? new Date(vendor.updated_at).toISOString().split('T')[0] : ''
-    }));
->>>>>>> c1baa51e48058b34501fe27ef2ff96e7d29299b0
   } catch (error) {
     console.error('Error fetching vendors:', error);
     throw error;
@@ -453,7 +438,6 @@ export const createVendor = async (vendorData) => {
         rating,
         total_orders
       ) VALUES (
-<<<<<<< HEAD
         ${companyName || ''},
         ${companyType || null},
         ${onboardingDate ? new Date(onboardingDate) : null},
@@ -472,26 +456,6 @@ export const createVendor = async (vendorData) => {
         ${status || 'Pending'},
         ${JSON.stringify(processedFiles)},
         ${0},
-=======
-        ${companyName},
-        ${companyType},
-        ${onboardingDate},
-        ${JSON.stringify(emails)},
-        ${JSON.stringify(phones)},
-        ${address},
-        ${country},
-        ${state},
-        ${city},
-        ${username},
-        ${gstNumber},
-        ${description},
-        ${JSON.stringify(services || [])},
-        ${website || ''},
-        ${typeOfWork || ''},
-        ${status || 'Pending'},
-        ${JSON.stringify(files || {})},
-        ${0.0},
->>>>>>> c1baa51e48058b34501fe27ef2ff96e7d29299b0
         ${0}
       )
       RETURNING *

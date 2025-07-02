@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Page</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f9f9f9;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .success {
+            color: green;
+            font-weight: bold;
+        }
+        .error {
+            color: red;
+            font-weight: bold;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Innoventory Admin Panel - Test Page</h1>
+        
+        <div id="status">
+            <h3>System Status:</h3>
+            <p id="basic-test" class="success">✅ Basic HTML/CSS: Working</p>
+            <p id="js-test">⏳ JavaScript: Testing...</p>
+            <p id="fetch-test">⏳ Fetch API: Testing...</p>
+            <p id="json-test">⏳ JSON Loading: Testing...</p>
+        </div>
+
+        <div style="margin: 20px 0;">
+            <h3>Quick Tests:</h3>
+            <button onclick="testJavaScript()">Test JavaScript</button>
+            <button onclick="testFetch()">Test Fetch API</button>
+            <button onclick="testJSON()">Test JSON Loading</button>
+            <button onclick="goToApp()">Go to Main App</button>
+        </div>
+
+        <div id="results" style="margin-top: 20px;">
+            <h3>Test Results:</h3>
+            <div id="output"></div>
+        </div>
+
+        <div style="margin-top: 20px;">
+            <h3>Useful Links:</h3>
+            <ul>
+                <li><a href="/">Main Application</a></li>
+                <li><a href="/clients">Clients Page</a></li>
+                <li><a href="/vendors">Vendors Page</a></li>
+                <li><a href="/test-location-service.html">Location Service Test</a></li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        // Test JavaScript functionality
+        function testJavaScript() {
+            try {
+                document.getElementById('js-test').innerHTML = '✅ JavaScript: Working';
+                document.getElementById('js-test').className = 'success';
+                addOutput('✅ JavaScript test passed');
+            } catch (error) {
+                document.getElementById('js-test').innerHTML = '❌ JavaScript: Failed';
+                document.getElementById('js-test').className = 'error';
+                addOutput('❌ JavaScript test failed: ' + error.message);
+            }
+        }
+
+        // Test Fetch API
+        async function testFetch() {
+            try {
+                const response = await fetch('/cities_states.json');
+                if (response.ok) {
+                    document.getElementById('fetch-test').innerHTML = '✅ Fetch API: Working';
+                    document.getElementById('fetch-test').className = 'success';
+                    addOutput('✅ Fetch API test passed');
+                } else {
+                    throw new Error('Response not OK: ' + response.status);
+                }
+            } catch (error) {
+                document.getElementById('fetch-test').innerHTML = '❌ Fetch API: Failed';
+                document.getElementById('fetch-test').className = 'error';
+                addOutput('❌ Fetch API test failed: ' + error.message);
+            }
+        }
+
+        // Test JSON loading
+        async function testJSON() {
+            try {
+                const response = await fetch('/cities_states.json');
+                const data = await response.json();
+                
+                if (Array.isArray(data) && data.length > 0) {
+                    document.getElementById('json-test').innerHTML = '✅ JSON Loading: Working';
+                    document.getElementById('json-test').className = 'success';
+                    addOutput(`✅ JSON test passed - loaded ${data.length} states`);
+                } else {
+                    throw new Error('Invalid JSON data structure');
+                }
+            } catch (error) {
+                document.getElementById('json-test').innerHTML = '❌ JSON Loading: Failed';
+                document.getElementById('json-test').className = 'error';
+                addOutput('❌ JSON test failed: ' + error.message);
+            }
+        }
+
+        // Go to main app
+        function goToApp() {
+            window.location.href = '/';
+        }
+
+        // Add output to results
+        function addOutput(message) {
+            const output = document.getElementById('output');
+            const p = document.createElement('p');
+            p.textContent = new Date().toLocaleTimeString() + ' - ' + message;
+            output.appendChild(p);
+        }
+
+        // Run initial tests
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                testJavaScript();
+                setTimeout(() => {
+                    testFetch();
+                    setTimeout(() => {
+                        testJSON();
+                    }, 500);
+                }, 500);
+            }, 100);
+        });
+    </script>
+</body>
+</html>
